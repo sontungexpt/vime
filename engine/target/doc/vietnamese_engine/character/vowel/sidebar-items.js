@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BaseVowel","Case","Shape","Tone"],"struct":["Vowel"]};
