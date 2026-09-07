@@ -1,7 +1,4 @@
-use crate::{
-    Composition, Config, Input, Interpreter, Renderer, Result, SimpleInterpreter, SimpleRenderer,
-    State,
-};
+use crate::{Composition, Config, Input, Interpreter, Renderer, Result, SimpleInterpreter, SimpleRenderer};
 
 /// Suffix appended when committing on the space bar.
 const SUFFIX_SPACE: &str = " ";
@@ -45,13 +42,6 @@ impl<I: Interpreter> Engine<I> {
             .render(self.composition.raw_chars(), self.composition.cursor())
     }
 
-    pub fn state(&self) -> State<'_> {
-        State {
-            composition: (!self.composition.is_empty()).then_some(&self.composition),
-            rendered: self.rendered(),
-        }
-    }
-
     pub fn reset(&mut self) -> Result {
         self.composition.clear();
         Result::Changed
@@ -79,6 +69,7 @@ impl<I: Interpreter> Engine<I> {
         self.composition.clear();
         Result::Commit(rendered)
     }
+
     fn commit_with_suffix(&mut self, suffix: &str) -> Result {
         if self.composition.is_empty() {
             return Result::Forward;
@@ -262,7 +253,8 @@ mod tests {
         let mut second = engine();
         type_text(&mut first, "aas");
         type_text(&mut second, "aas");
-        assert_eq!(first.state(), second.state());
+        assert_eq!(first.rendered(), second.rendered());
+        assert_eq!(first.composition(), second.composition());
     }
 
     #[test]

@@ -1,5 +1,17 @@
-use crate::processor::render_raw;
-use crate::{Interpreter, Orthography, SimpleInterpreter};
+pub mod syllable;
+
+pub use syllable::ParsedSyllable;
+
+use crate::{Interpreter, SimpleInterpreter};
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum Orthography {
+    /// Today's standard tone placement (e.g. *hòa*, *tuyển*).
+    #[default]
+    Modern,
+    /// Traditional (pre-reform) tone placement (e.g. *hoà*, *thuý*).
+    Old,
+}
 
 /// Renders canonical raw Vietnamese input into Unicode Vietnamese text.
 pub trait Renderer {
@@ -30,13 +42,16 @@ impl<I: Interpreter> SimpleRenderer<I> {
 }
 
 impl<I: Interpreter> Renderer for SimpleRenderer<I> {
-    fn render(&self, raw: &[char], _cursor: usize) -> String {
-        if raw.len() <= 1 {
+    fn render(&self, raw: &[char], cursor: usize) -> String {
+        // Not thing to compute
+        if raw.len() < 2 {
             return raw.iter().collect();
         }
-        let mut input = String::with_capacity(raw.len());
-        input.extend(raw);
-        render_raw(&input, self.orthography)
+        // if cursor >= raw.len() {
+        //     return raw.iter().collect();
+        // }
+
+        String::new()
     }
 }
 

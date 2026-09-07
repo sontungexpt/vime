@@ -21,26 +21,21 @@ mod config;
 mod engine;
 mod input;
 mod interpreter;
-mod processor;
 mod renderer;
 mod result;
-mod state;
 
-pub mod character;
+pub mod phonology;
 
-pub use character::{decode_vowel, encode_vowel, BaseVowel, Case, RootVowel, Shape, Tone, Vowel};
 pub use composition::Composition;
 pub use config::Config;
 pub use engine::Engine;
 pub use input::Input;
 pub use interpreter::{
-    SimpleInterpreter, Interpreter, InterpreterConfig, KeyContext, Operation, ShapeConfig,
-    ShapeTarget, ToneConfig,
+    Interpreter, InterpreterConfig, KeyContext, Operation, ShapeConfig, ShapeTarget,
+    SimpleInterpreter, ToneConfig,
 };
-pub use processor::{
-    analyze_syllable, analyze_syllable_with_orthography, canonicalize_into, normalize, Coda, Onset,
-    Orthography, Processor, SequenceState, SyllableAnalysis, WordStructure,
+pub use phonology::{
+    decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, RootVowel, Shape, Tone,
 };
-pub use renderer::{Renderer, SimpleRenderer};
+pub use renderer::{Orthography, ParsedSyllable, Renderer, SimpleRenderer};
 pub use result::Result;
-pub use state::State;
