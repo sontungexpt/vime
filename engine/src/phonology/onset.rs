@@ -1,4 +1,3 @@
-/// Vietnamese syllable onset.
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum Onset {
@@ -40,6 +39,37 @@ impl Onset {
     pub const LEN: u8 = Self::_Count as u8;
     pub const MAX_ID: u8 = Self::LEN - 1;
 
+    /// Returns whether `ch` can occur in a supported onset.
+    ///
+    /// This checks individual characters, so `i`, `q`, and `u` are accepted
+    /// because they occur in `gi` and `qu`.
+    #[inline(always)]
+    pub const fn is_valid_char(ch: char) -> bool {
+        match ch {
+            'đ' | 'Đ' => true,
+            _ => matches!(
+                ch.to_ascii_lowercase(),
+                'b' | 'c'
+                    | 'd'
+                    | 'g'
+                    | 'h'
+                    | 'i'
+                    | 'k'
+                    | 'l'
+                    | 'm'
+                    | 'n'
+                    | 'p'
+                    | 'q'
+                    | 'r'
+                    | 's'
+                    | 't'
+                    | 'u'
+                    | 'v'
+                    | 'x'
+            ),
+        }
+    }
+
     /// O(1) lookup from a numeric ID. Returns `None` for out-of-bounds IDs.
     #[inline(always)]
     pub const fn from_id(id: u8) -> Option<Self> {
@@ -60,27 +90,24 @@ impl Onset {
             // -------------------------------------------------------------
             // 1. One-byte onset (A-Z, a-z).
             // -------------------------------------------------------------
-            1 => {
-                // `b'a' | 0x20` converts ASCII uppercase to lowercase.
-                match bytes[0] | 0x20 {
-                    b'b' => Some(Self::B),
-                    b'c' => Some(Self::C),
-                    b'd' => Some(Self::D),
-                    b'g' => Some(Self::G),
-                    b'h' => Some(Self::H),
-                    b'k' => Some(Self::K),
-                    b'l' => Some(Self::L),
-                    b'm' => Some(Self::M),
-                    b'n' => Some(Self::N),
-                    b'p' => Some(Self::P),
-                    b'r' => Some(Self::R),
-                    b's' => Some(Self::S),
-                    b't' => Some(Self::T),
-                    b'v' => Some(Self::V),
-                    b'x' => Some(Self::X),
-                    _ => None,
-                }
-            }
+            1 => match bytes[0].to_ascii_lowercase() {
+                b'b' => Some(Self::B),
+                b'c' => Some(Self::C),
+                b'd' => Some(Self::D),
+                b'g' => Some(Self::G),
+                b'h' => Some(Self::H),
+                b'k' => Some(Self::K),
+                b'l' => Some(Self::L),
+                b'm' => Some(Self::M),
+                b'n' => Some(Self::N),
+                b'p' => Some(Self::P),
+                b'r' => Some(Self::R),
+                b's' => Some(Self::S),
+                b't' => Some(Self::T),
+                b'v' => Some(Self::V),
+                b'x' => Some(Self::X),
+                _ => None,
+            },
 
             // -------------------------------------------------------------
             // 2. Two-byte onset ("ch", "gi", "đ", "gh", "kh", "ng", "ph", "qu", "th", "tr").
@@ -92,8 +119,8 @@ impl Onset {
                 }
 
                 // Pack the two ASCII bytes into a lowercase `u16` value.
-                let b0 = bytes[0] | 0x20;
-                let b1 = bytes[1] | 0x20;
+                let b0 = bytes[0].to_ascii_lowercase();
+                let b1 = bytes[1].to_ascii_lowercase();
                 let pair = ((b0 as u16) << 8) | (b1 as u16);
 
                 match pair {
@@ -114,9 +141,9 @@ impl Onset {
             // 3. Three-byte onset ("ngh").
             // -------------------------------------------------------------
             3 => {
-                let b0 = bytes[0] | 0x20;
-                let b1 = bytes[1] | 0x20;
-                let b2 = bytes[2] | 0x20;
+                let b0 = bytes[0].to_ascii_lowercase();
+                let b1 = bytes[1].to_ascii_lowercase();
+                let b2 = bytes[2].to_ascii_lowercase();
 
                 if b0 == b'n' && b1 == b'g' && b2 == b'h' {
                     Some(Self::Ngh)

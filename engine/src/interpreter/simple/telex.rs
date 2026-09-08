@@ -1,5 +1,5 @@
-use super::{InterpreterConfig, ShapeConfig, ToneConfig};
-use crate::{RootVowel, Shape, ShapeTarget, Tone};
+use super::super::{InterpreterConfig, ShapeConfig, ToneConfig};
+use crate::{RootVowel, Shape, ShapeFamily, Tone};
 
 pub(crate) const CONFIG: &InterpreterConfig = &InterpreterConfig {
     tone_keys: &[
@@ -31,37 +31,37 @@ pub(crate) const CONFIG: &InterpreterConfig = &InterpreterConfig {
     shape_keys: &[
         ShapeConfig {
             key: 'a',
-            target: ShapeTarget::Vowel(RootVowel::A),
+            target: ShapeFamily::Vowel(RootVowel::A),
             shape: Shape::Circumflex,
         },
         ShapeConfig {
             key: 'w',
-            target: ShapeTarget::Vowel(RootVowel::A),
+            target: ShapeFamily::Vowel(RootVowel::A),
             shape: Shape::Breve,
         },
         ShapeConfig {
             key: 'e',
-            target: ShapeTarget::Vowel(RootVowel::E),
+            target: ShapeFamily::Vowel(RootVowel::E),
             shape: Shape::Circumflex,
         },
         ShapeConfig {
             key: 'o',
-            target: ShapeTarget::Vowel(RootVowel::O),
+            target: ShapeFamily::Vowel(RootVowel::O),
             shape: Shape::Circumflex,
         },
         ShapeConfig {
             key: 'w',
-            target: ShapeTarget::Vowel(RootVowel::O),
+            target: ShapeFamily::Vowel(RootVowel::O),
             shape: Shape::Horn,
         },
         ShapeConfig {
             key: 'w',
-            target: ShapeTarget::Vowel(RootVowel::U),
+            target: ShapeFamily::Vowel(RootVowel::U),
             shape: Shape::Horn,
         },
         ShapeConfig {
             key: 'd',
-            target: ShapeTarget::D,
+            target: ShapeFamily::D,
             shape: Shape::Stroke,
         },
     ],

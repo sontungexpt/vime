@@ -47,7 +47,7 @@ impl Coda {
             0 => Some(Self::None),
 
             // Single-byte codas ("c", "m", "n", "p", "t")
-            1 => match bytes[0] | 0x20 {
+            1 => match bytes[0].to_ascii_lowercase() {
                 b'c' => Some(Self::C),
                 b'm' => Some(Self::M),
                 b'n' => Some(Self::N),
@@ -58,8 +58,8 @@ impl Coda {
 
             // Two-byte codas ("ch", "ng", "nh")
             2 => {
-                let b0 = bytes[0] | 0x20;
-                let b1 = bytes[1] | 0x20;
+                let b0 = bytes[0].to_ascii_lowercase();
+                let b1 = bytes[1].to_ascii_lowercase();
                 let pair = ((b0 as u16) << 8) | (b1 as u16);
 
                 match pair {

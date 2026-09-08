@@ -1,5 +1,5 @@
 /// Base ASCII vowel letter independent of shape, tone, and case.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum RootVowel {
     A = 0,
@@ -10,8 +10,7 @@ pub enum RootVowel {
     Y = 5,
 }
 
-/// Diacritical shape modification applied to a base vowel or consonant.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum Shape {
     None = 0,
@@ -21,10 +20,7 @@ pub enum Shape {
     Stroke = 4,
 }
 
-/// The 6 Vietnamese tones (thanh điệu).
-///
-/// Discriminants double as the tone index; `Flat` (0) means no diacritic.
-#[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum Tone {
     #[default]
@@ -51,8 +47,7 @@ impl Tone {
     }
 }
 
-/// Letter case representation.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum Case {
     Lower = 0,
@@ -400,20 +395,29 @@ pub const fn decode_vowel(character: char) -> Option<(BaseVowel, Tone, Case)> {
 
 /// Decodes and keeps only the [`BaseVowel`] part.
 #[inline(always)]
-pub fn decode_vowel_base(character: char) -> Option<BaseVowel> {
-    decode_vowel(character).map(|(base, _, _)| base)
+pub const fn decode_vowel_base(character: char) -> Option<BaseVowel> {
+    match decode_vowel(character) {
+        Some((base, _, _)) => Some(base),
+        None => None,
+    }
 }
 
 /// Decodes and keeps only the [`Tone`] part.
 #[inline(always)]
-pub fn decode_vowel_tone(character: char) -> Option<Tone> {
-    decode_vowel(character).map(|(_, tone, _)| tone)
+pub const fn decode_vowel_tone(character: char) -> Option<Tone> {
+    match decode_vowel(character) {
+        Some((_, tone, _)) => Some(tone),
+        None => None,
+    }
 }
 
 /// Decodes and keeps only the [`Case`] part.
 #[inline(always)]
-pub fn decode_vowel_case(character: char) -> Option<Case> {
-    decode_vowel(character).map(|(_, _, case)| case)
+pub const fn decode_vowel_case(character: char) -> Option<Case> {
+    match decode_vowel(character) {
+        Some((_, _, case)) => Some(case),
+        None => None,
+    }
 }
 
 /// Whether `ch` is a Vietnamese vowel, without decoding its parts.

@@ -31,7 +31,7 @@ pub use config::Config;
 pub use engine::Engine;
 pub use input::Input;
 pub use interpreter::{
-    Interpreter, InterpreterConfig, KeyContext, Operation, ShapeConfig, ShapeTarget,
+    Interpreter, InterpreterConfig, KeyContext, Operation, ShapeConfig, ShapeFamily,
     SimpleInterpreter, ToneConfig,
 };
 pub use phonology::{
