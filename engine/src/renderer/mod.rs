@@ -1,8 +1,10 @@
-pub mod syllable;
+mod api;
+pub mod parser;
 
-pub use syllable::ParsedSyllable;
+pub use api::Renderer;
+pub use parser::ParsedSyllable;
 
-use crate::{processor, Interpreter, SimpleInterpreter};
+use crate::{KeyInterpreter, SimpleInterpreter};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Orthography {
@@ -13,18 +15,13 @@ pub enum Orthography {
     Old,
 }
 
-/// Renders canonical raw Vietnamese input into Unicode Vietnamese text.
-pub trait Renderer {
-    fn render(&self, raw: &[char], cursor: usize) -> String;
-}
-
 /// The standard renderer, backed by an interpreter and an orthography.
-pub struct SimpleRenderer<I: Interpreter = SimpleInterpreter<'static>> {
+pub struct SimpleRenderer<I: KeyInterpreter = SimpleInterpreter<'static>> {
     interpreter: I,
     orthography: Orthography,
 }
 
-impl<I: Interpreter> SimpleRenderer<I> {
+impl<I: KeyInterpreter> SimpleRenderer<I> {
     pub const fn new(interpreter: I, orthography: Orthography) -> Self {
         Self {
             interpreter,
@@ -41,15 +38,14 @@ impl<I: Interpreter> SimpleRenderer<I> {
     }
 }
 
-impl<I: Interpreter> Renderer for SimpleRenderer<I> {
-    fn render(&self, raw: &[char], cursor: usize) -> String {
-        let _ = cursor;
-        processor::render_raw(raw)
-    }
-}
-
 impl Default for SimpleRenderer<SimpleInterpreter<'static>> {
     fn default() -> Self {
         Self::new(SimpleInterpreter::telex(), Orthography::default())
+    }
+}
+
+impl<I: KeyInterpreter> Renderer for SimpleRenderer<I> {
+    fn render(&self, raw: &[char], _cursor: usize) -> String {
+        raw.iter().collect()
     }
 }

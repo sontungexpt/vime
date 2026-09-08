@@ -1,99 +1,120 @@
-use crate::{Buffer, Config, Input, Processor, Result, SimpleRenderer};
+use crate::{
+    Buffer, BufferChar, Config, Input, KeyInterpreter, Renderer, Result, SimpleInterpreter,
+    SimpleRenderer,
+};
 
 const SUFFIX_SPACE: &str = " ";
 
-/// Deterministic, side-effect-free Vietnamese input engine.
-pub struct Engine<P: Processor> {
+pub struct Engine<R: Renderer, I: KeyInterpreter> {
     config: Config,
-    processor: P,
-    buffer: Buffer,
+    keystrokes: Buffer,
+    interpreter: I,
+    renderer: R,
 }
 
-impl Default for Engine<SimpleRenderer> {
-    fn default() -> Self {
-        Self::new(Config::default())
-    }
-}
-
-impl<P: Processor> Engine<P> {
-    pub fn with_processor(config: Config, processor: P) -> Self {
-        Self {
-            config,
-            processor,
-            buffer: Buffer::new(),
-        }
-    }
-
+impl<R, I> Engine<R, I>
+where
+    R: Renderer,
+    I: KeyInterpreter,
+{
     pub fn config(&self) -> &Config {
         &self.config
     }
 
-    pub fn buffer(&self) -> &Buffer {
-        &self.buffer
+    pub fn keystrokes(&self) -> &Buffer {
+        &self.keystrokes
     }
 
     pub fn rendered(&self) -> String {
-        self.processor
-            .render(self.buffer.raw_chars(), self.buffer.cursor())
+        let raw: Vec<char> = self
+            .keystrokes
+            .chars()
+            .iter()
+            .map(BufferChar::as_char)
+            .collect();
+        self.renderer.render(&raw, self.keystrokes.cursor())
     }
 
     pub fn reset(&mut self) -> Result {
-        self.buffer.clear();
+        self.keystrokes.clear();
         Result::Changed
     }
 
     pub fn input(&mut self, input: Input) -> Result {
         match input {
             Input::Character(character) => self.insert(character),
-            Input::Backspace => self.erase(Buffer::backspace),
-            Input::Delete => self.erase(Buffer::delete),
-            Input::Left => self.move_cursor(Buffer::move_left),
-            Input::Right => self.move_cursor(Buffer::move_right),
+            Input::Backspace => self.backspace(),
+            Input::Delete => self.delete(),
+            Input::Left => self.move_left(),
+            Input::Right => self.move_right(),
             Input::Space => self.commit_with_suffix(SUFFIX_SPACE),
             Input::Enter | Input::Tab | Input::Escape => self.commit(),
         }
     }
 
     pub fn commit(&mut self) -> Result {
-        if self.buffer.is_empty() {
-            return Result::Forward;
-        }
-        let rendered = self.rendered();
-        self.buffer.clear();
-        Result::Commit(rendered)
+        self.commit_with_suffix("")
     }
 
     fn commit_with_suffix(&mut self, suffix: &str) -> Result {
-        if self.buffer.is_empty() {
+        if self.keystrokes.is_empty() {
             return Result::Forward;
         }
+
         let mut text = self.rendered();
         text.push_str(suffix);
-        self.buffer.clear();
+        self.keystrokes.clear();
         Result::Commit(text)
     }
 
     fn insert(&mut self, character: char) -> Result {
-        self.buffer.insert(character);
+        if self.interpreter.is_transform_key(character) {
+            self.keystrokes.insert(BufferChar::Transform(character));
+        } else {
+            self.keystrokes.insert(BufferChar::Literal(character));
+        }
         Result::Changed
     }
 
-    fn erase(&mut self, operation: fn(&mut Buffer)) -> Result {
-        if self.buffer.is_empty() {
+    fn backspace(&mut self) -> Result {
+        self.apply(Buffer::backspace)
+    }
+
+    fn delete(&mut self) -> Result {
+        self.apply(Buffer::delete)
+    }
+
+    fn move_left(&mut self) -> Result {
+        self.apply(Buffer::move_left)
+    }
+
+    fn move_right(&mut self) -> Result {
+        self.apply(Buffer::move_right)
+    }
+
+    fn apply(&mut self, operation: fn(&mut Buffer)) -> Result {
+        if self.keystrokes.is_empty() {
             return Result::Forward;
         }
-        operation(&mut self.buffer);
-        Result::Changed
-    }
 
-    fn move_cursor(&mut self, operation: fn(&mut Buffer)) -> Result {
-        operation(&mut self.buffer);
+        operation(&mut self.keystrokes);
         Result::Changed
     }
 }
 
-impl Engine<SimpleRenderer> {
+impl Engine<SimpleRenderer, SimpleInterpreter<'static>> {
     pub fn new(config: Config) -> Self {
-        Self::with_processor(config, SimpleRenderer::default())
+        Self {
+            config,
+            keystrokes: Buffer::new(),
+            interpreter: SimpleInterpreter::telex(),
+            renderer: SimpleRenderer::default(),
+        }
+    }
+}
+
+impl Default for Engine<SimpleRenderer, SimpleInterpreter<'static>> {
+    fn default() -> Self {
+        Self::new(Config::default())
     }
 }

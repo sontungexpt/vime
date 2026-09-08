@@ -1,3 +1,6 @@
+use std::fmt;
+use std::str::FromStr;
+
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum Onset {
@@ -29,137 +32,99 @@ pub enum Onset {
     Tr,
     V,
     X,
-
-    /// Sentinel marking the number of real onset variants.
-    _Count,
 }
 
 impl Onset {
     pub const MAX_ONSET_BYTES: usize = 3;
-    pub const LEN: u8 = Self::_Count as u8;
+    pub const LEN: u8 = 27 as u8;
     pub const MAX_ID: u8 = Self::LEN - 1;
 
-    /// Returns whether `ch` can occur in a supported onset.
-    ///
-    /// This checks individual characters, so `i`, `q`, and `u` are accepted
-    /// because they occur in `gi` and `qu`.
+    /// O(1) lookup from a numeric ID. Returns `Err(())` for out-of-bounds IDs.
     #[inline(always)]
-    pub const fn is_valid_char(ch: char) -> bool {
-        match ch {
-            'đ' | 'Đ' => true,
-            _ => matches!(
-                ch.to_ascii_lowercase(),
-                'b' | 'c'
-                    | 'd'
-                    | 'g'
-                    | 'h'
-                    | 'i'
-                    | 'k'
-                    | 'l'
-                    | 'm'
-                    | 'n'
-                    | 'p'
-                    | 'q'
-                    | 'r'
-                    | 's'
-                    | 't'
-                    | 'u'
-                    | 'v'
-                    | 'x'
-            ),
-        }
-    }
-
-    /// O(1) lookup from a numeric ID. Returns `None` for out-of-bounds IDs.
-    #[inline(always)]
-    pub const fn from_id(id: u8) -> Option<Self> {
+    pub const fn from_id(id: u8) -> Result<Self, ()> {
         // Safety: real discriminants are contiguous from 0 through MAX_ID.
         if id < Self::LEN {
-            Some(unsafe { std::mem::transmute::<u8, Self>(id) })
+            Ok(unsafe { std::mem::transmute::<u8, Self>(id) })
         } else {
-            None
+            Err(())
         }
     }
 
     /// O(1) case-insensitive lookup, compatible with const evaluation.
     #[inline(always)]
-    pub const fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        match bytes.len() {
-            0 => Some(Self::None),
+    pub const fn from_bytes(bytes: &[u8]) -> Result<Self, ()> {
+        match bytes {
+            [] => Ok(Self::None),
 
-            // -------------------------------------------------------------
-            // 1. One-byte onset (A-Z, a-z).
-            // -------------------------------------------------------------
-            1 => match bytes[0].to_ascii_lowercase() {
-                b'b' => Some(Self::B),
-                b'c' => Some(Self::C),
-                b'd' => Some(Self::D),
-                b'g' => Some(Self::G),
-                b'h' => Some(Self::H),
-                b'k' => Some(Self::K),
-                b'l' => Some(Self::L),
-                b'm' => Some(Self::M),
-                b'n' => Some(Self::N),
-                b'p' => Some(Self::P),
-                b'r' => Some(Self::R),
-                b's' => Some(Self::S),
-                b't' => Some(Self::T),
-                b'v' => Some(Self::V),
-                b'x' => Some(Self::X),
-                _ => None,
+            // One-byte onset (A-Z, a-z).
+            &[byte] => match byte | 0x20 {
+                b'b' => Ok(Self::B),
+                b'c' => Ok(Self::C),
+                b'd' => Ok(Self::D),
+                b'g' => Ok(Self::G),
+                b'h' => Ok(Self::H),
+                b'k' => Ok(Self::K),
+                b'l' => Ok(Self::L),
+                b'm' => Ok(Self::M),
+                b'n' => Ok(Self::N),
+                b'p' => Ok(Self::P),
+                b'r' => Ok(Self::R),
+                b's' => Ok(Self::S),
+                b't' => Ok(Self::T),
+                b'v' => Ok(Self::V),
+                b'x' => Ok(Self::X),
+                _ => Err(()),
             },
 
-            // -------------------------------------------------------------
-            // 2. Two-byte onset ("ch", "gi", "đ", "gh", "kh", "ng", "ph", "qu", "th", "tr").
-            // -------------------------------------------------------------
-            2 => {
-                // Handle the UTF-8 bytes for 'đ' / 'Đ' separately.
-                if bytes[0] == 0xC4 && (bytes[1] == 0x91 || bytes[1] == 0x90) {
-                    return Some(Self::Đ);
-                }
+            // UTF-8 for 'đ' / 'Đ'.
+            [0xC4, 0x91 | 0x90] => Ok(Self::Đ),
 
-                // Pack the two ASCII bytes into a lowercase `u16` value.
-                let b0 = bytes[0].to_ascii_lowercase();
-                let b1 = bytes[1].to_ascii_lowercase();
-                let pair = ((b0 as u16) << 8) | (b1 as u16);
+            // Two-byte ASCII onsets.
+            &[first, second] => match [first | 0x20, second | 0x20] {
+                [b'c', b'h'] => Ok(Self::Ch),
+                [b'g', b'h'] => Ok(Self::Gh),
+                [b'g', b'i'] => Ok(Self::Gi),
+                [b'k', b'h'] => Ok(Self::Kh),
+                [b'n', b'g'] => Ok(Self::Ng),
+                [b'p', b'h'] => Ok(Self::Ph),
+                [b'q', b'u'] => Ok(Self::QU),
+                [b't', b'h'] => Ok(Self::Th),
+                [b't', b'r'] => Ok(Self::Tr),
+                _ => Err(()),
+            },
 
-                match pair {
-                    0x6368 => Some(Self::Ch), // b"ch"
-                    0x6768 => Some(Self::Gh), // b"gh"
-                    0x6769 => Some(Self::Gi), // b"gi"
-                    0x6B68 => Some(Self::Kh), // b"kh"
-                    0x6E67 => Some(Self::Ng), // b"ng"
-                    0x7068 => Some(Self::Ph), // b"ph"
-                    0x7175 => Some(Self::QU), // b"qu"
-                    0x7468 => Some(Self::Th), // b"th"
-                    0x7472 => Some(Self::Tr), // b"tr"
-                    _ => None,
-                }
-            }
-
-            // -------------------------------------------------------------
-            // 3. Three-byte onset ("ngh").
-            // -------------------------------------------------------------
-            3 => {
-                let b0 = bytes[0].to_ascii_lowercase();
-                let b1 = bytes[1].to_ascii_lowercase();
-                let b2 = bytes[2].to_ascii_lowercase();
-
-                if b0 == b'n' && b1 == b'g' && b2 == b'h' {
-                    Some(Self::Ngh)
+            // Three-byte onset ("ngh").
+            &[first, second, third] => {
+                if first | 0x20 == b'n' && second | 0x20 == b'g' && third | 0x20 == b'h' {
+                    Ok(Self::Ngh)
                 } else {
-                    None
+                    Err(())
                 }
             }
 
-            _ => None,
+            _ => Err(()),
         }
     }
 
-    /// O(1) lookup from a `&str`, handled case-insensitively.
+    /// O(1) case-insensitive lookup from a character slice.
     #[inline(always)]
-    pub const fn from_str(s: &str) -> Option<Self> {
-        Self::from_bytes(s.as_bytes())
+    pub const fn from_chars(chars: &[char]) -> Result<Self, ()> {
+        match chars {
+            [] => Ok(Self::None),
+            &['đ'] | &['Đ'] => Ok(Self::Đ),
+            &[character] if character.is_ascii_alphabetic() => Self::from_bytes(&[character as u8]),
+            &[first, second] if first.is_ascii_alphabetic() && second.is_ascii_alphabetic() => {
+                Self::from_bytes(&[first as u8, second as u8])
+            }
+            &[first, second, third]
+                if first.is_ascii_alphabetic()
+                    && second.is_ascii_alphabetic()
+                    && third.is_ascii_alphabetic() =>
+            {
+                Self::from_bytes(&[first as u8, second as u8, third as u8])
+            }
+            _ => Err(()),
+        }
     }
 
     const ENCODED_CHARS: &[&str] = &[
@@ -169,7 +134,22 @@ impl Onset {
 
     /// Converts the onset to a human-readable string.
     #[inline(always)]
-    pub const fn to_string(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         Self::ENCODED_CHARS[self as usize]
+    }
+}
+
+impl fmt::Display for Onset {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+impl FromStr for Onset {
+    type Err = ();
+
+    #[inline(always)]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_bytes(s.as_bytes())
     }
 }

@@ -1,16 +1,46 @@
-//! Language-neutral raw input buffer and cursor state.
-//!
-//! The raw buffer holds canonical ASCII letters and is renormalized after
-//! every insertion: valid syllables are re-serialized (merging duplicate horn
-//! markers, relocating trailing tone markers), everything else passes through
-//! verbatim so backspaces can always rebuild what was typed. Rendering the
-//! buffer into Vietnamese text lives in [`crate::processor::render_raw`], not
-//! here.
+use std::fmt::{self, Write};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum BufferChar {
+    Literal(char),
+    Transform(char),
+}
+
+impl BufferChar {
+    #[inline(always)]
+    pub const fn as_char(&self) -> char {
+        match *self {
+            BufferChar::Literal(c) | BufferChar::Transform(c) => c,
+        }
+    }
+
+    #[inline(always)]
+    pub const fn is_transform(&self) -> bool {
+        matches!(self, BufferChar::Transform(_))
+    }
+
+    #[inline(always)]
+    pub const fn as_transform(&self) -> Option<char> {
+        match self {
+            BufferChar::Transform(c) => Some(*c),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Buffer {
-    chars: Vec<char>,
+    chars: Vec<BufferChar>,
     cursor: usize,
+}
+
+impl fmt::Display for Buffer {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for character in &self.chars {
+            formatter.write_char(character.as_char())?;
+        }
+        Ok(())
+    }
 }
 
 impl Buffer {
@@ -26,12 +56,8 @@ impl Buffer {
         self.chars.is_empty()
     }
 
-    pub fn raw(&self) -> String {
-        self.chars.iter().collect()
-    }
-
     #[inline]
-    pub fn raw_chars(&self) -> &[char] {
+    pub fn chars(&self) -> &[BufferChar] {
         &self.chars
     }
 
@@ -41,16 +67,9 @@ impl Buffer {
     }
 
     #[inline]
-    pub(crate) fn insert(&mut self, ch: char) {
+    pub(crate) fn insert(&mut self, ch: BufferChar) {
         self.chars.insert(self.cursor, ch);
         self.cursor += 1;
-    }
-
-    /// Replaces the whole buffer, clamping the cursor to its length.
-    #[inline]
-    pub(crate) fn replace(&mut self, raw: String, cursor: usize) {
-        self.chars = raw.chars().collect();
-        self.cursor = cursor.min(self.chars.len());
     }
 
     #[inline]

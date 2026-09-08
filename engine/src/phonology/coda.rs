@@ -15,69 +15,74 @@ pub enum Coda {
     Nh = 6,
     P = 7,
     T = 8,
-
-    /// Sentinel marking the number of real coda variants.
-    _Count,
 }
 
 impl Coda {
     pub const MAX_CODA_BYTES: usize = 2;
-    pub const LEN: u8 = Self::_Count as u8;
-    pub const MAX_ID: u8 = Self::LEN - 1;
+    pub const LEN: usize = 9;
+    pub const MAX_ID: usize = Self::LEN - 1;
 
     /// Normalized string representations corresponding 1-to-1 with enum discriminants.
-    const ENCODED_STRS: [&'static str; Self::LEN as usize] =
-        ["", "c", "ch", "m", "n", "ng", "nh", "p", "t"];
+    const ENCODED_STRS: [&'static str; Self::LEN] = ["", "c", "ch", "m", "n", "ng", "nh", "p", "t"];
 
-    /// O(1) lookup from a numeric ID. Returns `None` for out-of-bounds IDs.
+    /// O(1) lookup from a numeric ID. Returns `Err(())` for out-of-bounds IDs.
     #[inline(always)]
-    pub const fn from_id(id: u8) -> Option<Self> {
-        if id < Self::LEN {
-            // Safety: Real discriminants are contiguous from 0 through MAX_ID.
-            Some(unsafe { std::mem::transmute::<u8, Self>(id) })
-        } else {
-            None
+    pub const fn from_id(id: usize) -> Result<Self, ()> {
+        match id {
+            0 => Ok(Self::None),
+            1 => Ok(Self::C),
+            2 => Ok(Self::Ch),
+            3 => Ok(Self::M),
+            4 => Ok(Self::N),
+            5 => Ok(Self::Ng),
+            6 => Ok(Self::Nh),
+            7 => Ok(Self::P),
+            8 => Ok(Self::T),
+            _ => Err(()),
         }
     }
 
     /// O(1) case-insensitive lookup from an ASCII byte slice (fully optimized for `const fn`).
     #[inline(always)]
-    pub const fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        match bytes.len() {
-            0 => Some(Self::None),
+    pub const fn from_bytes(bytes: &[u8]) -> Result<Self, ()> {
+        match bytes {
+            [] => Ok(Self::None),
 
             // Single-byte codas ("c", "m", "n", "p", "t")
-            1 => match bytes[0].to_ascii_lowercase() {
-                b'c' => Some(Self::C),
-                b'm' => Some(Self::M),
-                b'n' => Some(Self::N),
-                b'p' => Some(Self::P),
-                b't' => Some(Self::T),
-                _ => None,
+            &[byte] => match byte | 0x20 {
+                b'c' => Ok(Self::C),
+                b'm' => Ok(Self::M),
+                b'n' => Ok(Self::N),
+                b'p' => Ok(Self::P),
+                b't' => Ok(Self::T),
+                _ => Err(()),
             },
 
             // Two-byte codas ("ch", "ng", "nh")
-            2 => {
-                let b0 = bytes[0].to_ascii_lowercase();
-                let b1 = bytes[1].to_ascii_lowercase();
-                let pair = ((b0 as u16) << 8) | (b1 as u16);
+            &[first, second] => {
+                let pair = ((first | 0x20) as u16) << 8 | (second | 0x20) as u16;
 
                 match pair {
-                    0x6368 => Some(Self::Ch), // b"ch"
-                    0x6E67 => Some(Self::Ng), // b"ng"
-                    0x6E68 => Some(Self::Nh), // b"nh"
-                    _ => None,
+                    0x6368 => Ok(Self::Ch), // b"ch"
+                    0x6E67 => Ok(Self::Ng), // b"ng"
+                    0x6E68 => Ok(Self::Nh), // b"nh"
+                    _ => Err(()),
                 }
             }
 
-            _ => None,
+            _ => Err(()),
         }
     }
-
-    /// O(1) case-insensitive lookup from a `&str`.
     #[inline(always)]
-    pub const fn from_str(s: &str) -> Option<Self> {
-        Self::from_bytes(s.as_bytes())
+    pub const fn from_chars(chars: &[char]) -> Result<Self, ()> {
+        match chars {
+            [] => Ok(Self::None),
+            &[c] if c.is_ascii_alphabetic() => Self::from_bytes(&[c as u8]),
+            &[c0, c1] if c0.is_ascii_alphabetic() && c1.is_ascii_alphabetic() => {
+                Self::from_bytes(&[c0 as u8, c1 as u8])
+            }
+            _ => Err(()),
+        }
     }
 
     /// Returns the static string representation of the coda.
@@ -87,9 +92,8 @@ impl Coda {
     }
 }
 
-// Standard Display implementation (Zero-allocation string formatting)
 impl fmt::Display for Coda {
-    #[inline]
+    #[inline(always)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -101,6 +105,6 @@ impl FromStr for Coda {
 
     #[inline(always)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bytes(s.as_bytes()).ok_or(())
+        Self::from_bytes(s.as_bytes())
     }
 }

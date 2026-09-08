@@ -38,11 +38,14 @@ impl Tone {
     /// Out-of-range indices map to [`Tone::Flat`] instead of panicking.
     #[inline(always)]
     pub const fn from_id(id: usize) -> Self {
-        // Safety: Tone có #[repr(u16)] và các giá trị đếm liên tục từ 0..=5
-        if id <= 5 {
-            unsafe { std::mem::transmute::<u16, Self>(id as u16) }
-        } else {
-            Self::Flat
+        match id {
+            0 => Self::Flat,
+            1 => Self::Acute,
+            2 => Self::Grave,
+            3 => Self::Hook,
+            4 => Self::Tilde,
+            5 => Self::Dot,
+            _ => Self::Flat,
         }
     }
 }
@@ -112,36 +115,45 @@ impl BaseVowel {
         (self as u16 >> 5) as usize
     }
 
+    #[inline(always)]
+    pub const fn from_id(id: usize) -> Result<Self, ()> {
+        if id < Self::LEN as usize {
+            Ok(Self::ALL[id])
+        } else {
+            Err(())
+        }
+    }
+
     /// Returns the [`BaseVowel`] with the given priority `id`.
     ///
     /// # Panics
     ///
     /// Panics if `id` is not in `0..=11`.
     #[inline(always)]
-    pub const fn from_id(id: usize) -> Self {
-        Self::ALL[id]
+    pub unsafe fn from_id_unchecked(id: usize) -> Self {
+        *Self::ALL.get_unchecked(id)
     }
 
     /// The [`BaseVowel`] for a root letter and shape, if that combination
     /// exists. Returns `None` for [`Shape::Stroke`] (a consonant stroke, never
     /// a vowel) and for shapes Vietnamese does not attach to that root.
     #[inline(always)]
-    pub const fn from_parts(root: RootVowel, shape: Shape) -> Option<Self> {
-        Some(match (root, shape) {
-            (RootVowel::O, Shape::Horn) => BaseVowel::OHorn,
-            (RootVowel::E, Shape::Circumflex) => BaseVowel::ECircumflex,
-            (RootVowel::A, Shape::Breve) => BaseVowel::ABreve,
-            (RootVowel::O, Shape::Circumflex) => BaseVowel::OCircumflex,
-            (RootVowel::A, Shape::Circumflex) => BaseVowel::ACircumflex,
-            (RootVowel::U, Shape::Horn) => BaseVowel::UHorn,
-            (RootVowel::A, Shape::None) => BaseVowel::A,
-            (RootVowel::O, Shape::None) => BaseVowel::O,
-            (RootVowel::E, Shape::None) => BaseVowel::E,
-            (RootVowel::I, Shape::None) => BaseVowel::I,
-            (RootVowel::U, Shape::None) => BaseVowel::U,
-            (RootVowel::Y, Shape::None) => BaseVowel::Y,
-            _ => return None,
-        })
+    pub const fn from_parts(root: RootVowel, shape: Shape) -> Result<Self, ()> {
+        match (root, shape) {
+            (RootVowel::O, Shape::Horn) => Ok(BaseVowel::OHorn),
+            (RootVowel::E, Shape::Circumflex) => Ok(BaseVowel::ECircumflex),
+            (RootVowel::A, Shape::Breve) => Ok(BaseVowel::ABreve),
+            (RootVowel::O, Shape::Circumflex) => Ok(BaseVowel::OCircumflex),
+            (RootVowel::A, Shape::Circumflex) => Ok(BaseVowel::ACircumflex),
+            (RootVowel::U, Shape::Horn) => Ok(BaseVowel::UHorn),
+            (RootVowel::A, Shape::None) => Ok(BaseVowel::A),
+            (RootVowel::O, Shape::None) => Ok(BaseVowel::O),
+            (RootVowel::E, Shape::None) => Ok(BaseVowel::E),
+            (RootVowel::I, Shape::None) => Ok(BaseVowel::I),
+            (RootVowel::U, Shape::None) => Ok(BaseVowel::U),
+            (RootVowel::Y, Shape::None) => Ok(BaseVowel::Y),
+            _ => Err(()),
+        }
     }
 
     /// Returns the [`Shape`] component of this vowel.
@@ -223,200 +235,200 @@ pub const fn encode_vowel(base: BaseVowel, tone: Tone, case: Case) -> char {
 /// 3. **Latin Extended** — `ă ĩ ũ ơ ư` and capitals in U+0100..U+01B0 (10 arms).
 /// 4. **Vietnamese block** U+1EA0..U+1EF9 — every toned form (90 arms).
 #[inline(always)]
-pub const fn decode_vowel(character: char) -> Option<(BaseVowel, Tone, Case)> {
+pub const fn decode_vowel(character: char) -> Result<(BaseVowel, Tone, Case), ()> {
     match character as u32 {
         // ─────────────── 1. ASCII (raw keystrokes hit here most) ───────────────
         0x00..=0x7F => match character {
-            'a' => Some((BaseVowel::A, Tone::Flat, Case::Lower)),
-            'A' => Some((BaseVowel::A, Tone::Flat, Case::Upper)),
-            'o' => Some((BaseVowel::O, Tone::Flat, Case::Lower)),
-            'O' => Some((BaseVowel::O, Tone::Flat, Case::Upper)),
-            'e' => Some((BaseVowel::E, Tone::Flat, Case::Lower)),
-            'E' => Some((BaseVowel::E, Tone::Flat, Case::Upper)),
-            'i' => Some((BaseVowel::I, Tone::Flat, Case::Lower)),
-            'I' => Some((BaseVowel::I, Tone::Flat, Case::Upper)),
-            'u' => Some((BaseVowel::U, Tone::Flat, Case::Lower)),
-            'U' => Some((BaseVowel::U, Tone::Flat, Case::Upper)),
-            'y' => Some((BaseVowel::Y, Tone::Flat, Case::Lower)),
-            'Y' => Some((BaseVowel::Y, Tone::Flat, Case::Upper)),
-            _ => None,
+            'a' => Ok((BaseVowel::A, Tone::Flat, Case::Lower)),
+            'A' => Ok((BaseVowel::A, Tone::Flat, Case::Upper)),
+            'o' => Ok((BaseVowel::O, Tone::Flat, Case::Lower)),
+            'O' => Ok((BaseVowel::O, Tone::Flat, Case::Upper)),
+            'e' => Ok((BaseVowel::E, Tone::Flat, Case::Lower)),
+            'E' => Ok((BaseVowel::E, Tone::Flat, Case::Upper)),
+            'i' => Ok((BaseVowel::I, Tone::Flat, Case::Lower)),
+            'I' => Ok((BaseVowel::I, Tone::Flat, Case::Upper)),
+            'u' => Ok((BaseVowel::U, Tone::Flat, Case::Lower)),
+            'U' => Ok((BaseVowel::U, Tone::Flat, Case::Upper)),
+            'y' => Ok((BaseVowel::Y, Tone::Flat, Case::Lower)),
+            'Y' => Ok((BaseVowel::Y, Tone::Flat, Case::Upper)),
+            _ => Err(()),
         },
 
         // ─────────────── 2. Latin-1 Supplement (U+00C0..U+00FF) ───────────────
         0x80..=0xFF => match character {
-            'ê' => Some((BaseVowel::ECircumflex, Tone::Flat, Case::Lower)),
-            'Ê' => Some((BaseVowel::ECircumflex, Tone::Flat, Case::Upper)),
-            'ô' => Some((BaseVowel::OCircumflex, Tone::Flat, Case::Lower)),
-            'Ô' => Some((BaseVowel::OCircumflex, Tone::Flat, Case::Upper)),
-            'â' => Some((BaseVowel::ACircumflex, Tone::Flat, Case::Lower)),
-            'Â' => Some((BaseVowel::ACircumflex, Tone::Flat, Case::Upper)),
-            'á' => Some((BaseVowel::A, Tone::Acute, Case::Lower)),
-            'Á' => Some((BaseVowel::A, Tone::Acute, Case::Upper)),
-            'à' => Some((BaseVowel::A, Tone::Grave, Case::Lower)),
-            'À' => Some((BaseVowel::A, Tone::Grave, Case::Upper)),
-            'ã' => Some((BaseVowel::A, Tone::Tilde, Case::Lower)),
-            'Ã' => Some((BaseVowel::A, Tone::Tilde, Case::Upper)),
-            'ó' => Some((BaseVowel::O, Tone::Acute, Case::Lower)),
-            'Ó' => Some((BaseVowel::O, Tone::Acute, Case::Upper)),
-            'ò' => Some((BaseVowel::O, Tone::Grave, Case::Lower)),
-            'Ò' => Some((BaseVowel::O, Tone::Grave, Case::Upper)),
-            'õ' => Some((BaseVowel::O, Tone::Tilde, Case::Lower)),
-            'Õ' => Some((BaseVowel::O, Tone::Tilde, Case::Upper)),
-            'é' => Some((BaseVowel::E, Tone::Acute, Case::Lower)),
-            'É' => Some((BaseVowel::E, Tone::Acute, Case::Upper)),
-            'è' => Some((BaseVowel::E, Tone::Grave, Case::Lower)),
-            'È' => Some((BaseVowel::E, Tone::Grave, Case::Upper)),
-            'í' => Some((BaseVowel::I, Tone::Acute, Case::Lower)),
-            'Í' => Some((BaseVowel::I, Tone::Acute, Case::Upper)),
-            'ì' => Some((BaseVowel::I, Tone::Grave, Case::Lower)),
-            'Ì' => Some((BaseVowel::I, Tone::Grave, Case::Upper)),
-            'ú' => Some((BaseVowel::U, Tone::Acute, Case::Lower)),
-            'Ú' => Some((BaseVowel::U, Tone::Acute, Case::Upper)),
-            'ù' => Some((BaseVowel::U, Tone::Grave, Case::Lower)),
-            'Ù' => Some((BaseVowel::U, Tone::Grave, Case::Upper)),
-            'ý' => Some((BaseVowel::Y, Tone::Acute, Case::Lower)),
-            'Ý' => Some((BaseVowel::Y, Tone::Acute, Case::Upper)),
-            _ => None,
+            'ê' => Ok((BaseVowel::ECircumflex, Tone::Flat, Case::Lower)),
+            'Ê' => Ok((BaseVowel::ECircumflex, Tone::Flat, Case::Upper)),
+            'ô' => Ok((BaseVowel::OCircumflex, Tone::Flat, Case::Lower)),
+            'Ô' => Ok((BaseVowel::OCircumflex, Tone::Flat, Case::Upper)),
+            'â' => Ok((BaseVowel::ACircumflex, Tone::Flat, Case::Lower)),
+            'Â' => Ok((BaseVowel::ACircumflex, Tone::Flat, Case::Upper)),
+            'á' => Ok((BaseVowel::A, Tone::Acute, Case::Lower)),
+            'Á' => Ok((BaseVowel::A, Tone::Acute, Case::Upper)),
+            'à' => Ok((BaseVowel::A, Tone::Grave, Case::Lower)),
+            'À' => Ok((BaseVowel::A, Tone::Grave, Case::Upper)),
+            'ã' => Ok((BaseVowel::A, Tone::Tilde, Case::Lower)),
+            'Ã' => Ok((BaseVowel::A, Tone::Tilde, Case::Upper)),
+            'ó' => Ok((BaseVowel::O, Tone::Acute, Case::Lower)),
+            'Ó' => Ok((BaseVowel::O, Tone::Acute, Case::Upper)),
+            'ò' => Ok((BaseVowel::O, Tone::Grave, Case::Lower)),
+            'Ò' => Ok((BaseVowel::O, Tone::Grave, Case::Upper)),
+            'õ' => Ok((BaseVowel::O, Tone::Tilde, Case::Lower)),
+            'Õ' => Ok((BaseVowel::O, Tone::Tilde, Case::Upper)),
+            'é' => Ok((BaseVowel::E, Tone::Acute, Case::Lower)),
+            'É' => Ok((BaseVowel::E, Tone::Acute, Case::Upper)),
+            'è' => Ok((BaseVowel::E, Tone::Grave, Case::Lower)),
+            'È' => Ok((BaseVowel::E, Tone::Grave, Case::Upper)),
+            'í' => Ok((BaseVowel::I, Tone::Acute, Case::Lower)),
+            'Í' => Ok((BaseVowel::I, Tone::Acute, Case::Upper)),
+            'ì' => Ok((BaseVowel::I, Tone::Grave, Case::Lower)),
+            'Ì' => Ok((BaseVowel::I, Tone::Grave, Case::Upper)),
+            'ú' => Ok((BaseVowel::U, Tone::Acute, Case::Lower)),
+            'Ú' => Ok((BaseVowel::U, Tone::Acute, Case::Upper)),
+            'ù' => Ok((BaseVowel::U, Tone::Grave, Case::Lower)),
+            'Ù' => Ok((BaseVowel::U, Tone::Grave, Case::Upper)),
+            'ý' => Ok((BaseVowel::Y, Tone::Acute, Case::Lower)),
+            'Ý' => Ok((BaseVowel::Y, Tone::Acute, Case::Upper)),
+            _ => Err(()),
         },
 
         // ─────────────── 3. Latin Extended (U+0100..U+01B0) ───────────────
         0x100..=0x1DFF => match character {
-            'ơ' => Some((BaseVowel::OHorn, Tone::Flat, Case::Lower)),
-            'Ơ' => Some((BaseVowel::OHorn, Tone::Flat, Case::Upper)),
-            'ă' => Some((BaseVowel::ABreve, Tone::Flat, Case::Lower)),
-            'Ă' => Some((BaseVowel::ABreve, Tone::Flat, Case::Upper)),
-            'ư' => Some((BaseVowel::UHorn, Tone::Flat, Case::Lower)),
-            'Ư' => Some((BaseVowel::UHorn, Tone::Flat, Case::Upper)),
-            'ĩ' => Some((BaseVowel::I, Tone::Tilde, Case::Lower)),
-            'Ĩ' => Some((BaseVowel::I, Tone::Tilde, Case::Upper)),
-            'ũ' => Some((BaseVowel::U, Tone::Tilde, Case::Lower)),
-            'Ũ' => Some((BaseVowel::U, Tone::Tilde, Case::Upper)),
-            _ => None,
+            'ơ' => Ok((BaseVowel::OHorn, Tone::Flat, Case::Lower)),
+            'Ơ' => Ok((BaseVowel::OHorn, Tone::Flat, Case::Upper)),
+            'ă' => Ok((BaseVowel::ABreve, Tone::Flat, Case::Lower)),
+            'Ă' => Ok((BaseVowel::ABreve, Tone::Flat, Case::Upper)),
+            'ư' => Ok((BaseVowel::UHorn, Tone::Flat, Case::Lower)),
+            'Ư' => Ok((BaseVowel::UHorn, Tone::Flat, Case::Upper)),
+            'ĩ' => Ok((BaseVowel::I, Tone::Tilde, Case::Lower)),
+            'Ĩ' => Ok((BaseVowel::I, Tone::Tilde, Case::Upper)),
+            'ũ' => Ok((BaseVowel::U, Tone::Tilde, Case::Lower)),
+            'Ũ' => Ok((BaseVowel::U, Tone::Tilde, Case::Upper)),
+            _ => Err(()),
         },
 
         // ─────────────── 4. Vietnamese block (U+1EA0..U+1EF9) ───────────────
         0x1E00..=0x1EFF => match character {
-            'ớ' => Some((BaseVowel::OHorn, Tone::Acute, Case::Lower)),
-            'Ớ' => Some((BaseVowel::OHorn, Tone::Acute, Case::Upper)),
-            'ờ' => Some((BaseVowel::OHorn, Tone::Grave, Case::Lower)),
-            'Ờ' => Some((BaseVowel::OHorn, Tone::Grave, Case::Upper)),
-            'ở' => Some((BaseVowel::OHorn, Tone::Hook, Case::Lower)),
-            'Ở' => Some((BaseVowel::OHorn, Tone::Hook, Case::Upper)),
-            'ỡ' => Some((BaseVowel::OHorn, Tone::Tilde, Case::Lower)),
-            'Ỡ' => Some((BaseVowel::OHorn, Tone::Tilde, Case::Upper)),
-            'ợ' => Some((BaseVowel::OHorn, Tone::Dot, Case::Lower)),
-            'Ợ' => Some((BaseVowel::OHorn, Tone::Dot, Case::Upper)),
-            'ế' => Some((BaseVowel::ECircumflex, Tone::Acute, Case::Lower)),
-            'Ế' => Some((BaseVowel::ECircumflex, Tone::Acute, Case::Upper)),
-            'ề' => Some((BaseVowel::ECircumflex, Tone::Grave, Case::Lower)),
-            'Ề' => Some((BaseVowel::ECircumflex, Tone::Grave, Case::Upper)),
-            'ể' => Some((BaseVowel::ECircumflex, Tone::Hook, Case::Lower)),
-            'Ể' => Some((BaseVowel::ECircumflex, Tone::Hook, Case::Upper)),
-            'ễ' => Some((BaseVowel::ECircumflex, Tone::Tilde, Case::Lower)),
-            'Ễ' => Some((BaseVowel::ECircumflex, Tone::Tilde, Case::Upper)),
-            'ệ' => Some((BaseVowel::ECircumflex, Tone::Dot, Case::Lower)),
-            'Ệ' => Some((BaseVowel::ECircumflex, Tone::Dot, Case::Upper)),
-            'ắ' => Some((BaseVowel::ABreve, Tone::Acute, Case::Lower)),
-            'Ắ' => Some((BaseVowel::ABreve, Tone::Acute, Case::Upper)),
-            'ằ' => Some((BaseVowel::ABreve, Tone::Grave, Case::Lower)),
-            'Ằ' => Some((BaseVowel::ABreve, Tone::Grave, Case::Upper)),
-            'ẳ' => Some((BaseVowel::ABreve, Tone::Hook, Case::Lower)),
-            'Ẳ' => Some((BaseVowel::ABreve, Tone::Hook, Case::Upper)),
-            'ẵ' => Some((BaseVowel::ABreve, Tone::Tilde, Case::Lower)),
-            'Ẵ' => Some((BaseVowel::ABreve, Tone::Tilde, Case::Upper)),
-            'ặ' => Some((BaseVowel::ABreve, Tone::Dot, Case::Lower)),
-            'Ặ' => Some((BaseVowel::ABreve, Tone::Dot, Case::Upper)),
-            'ố' => Some((BaseVowel::OCircumflex, Tone::Acute, Case::Lower)),
-            'Ố' => Some((BaseVowel::OCircumflex, Tone::Acute, Case::Upper)),
-            'ồ' => Some((BaseVowel::OCircumflex, Tone::Grave, Case::Lower)),
-            'Ồ' => Some((BaseVowel::OCircumflex, Tone::Grave, Case::Upper)),
-            'ổ' => Some((BaseVowel::OCircumflex, Tone::Hook, Case::Lower)),
-            'Ổ' => Some((BaseVowel::OCircumflex, Tone::Hook, Case::Upper)),
-            'ỗ' => Some((BaseVowel::OCircumflex, Tone::Tilde, Case::Lower)),
-            'Ỗ' => Some((BaseVowel::OCircumflex, Tone::Tilde, Case::Upper)),
-            'ộ' => Some((BaseVowel::OCircumflex, Tone::Dot, Case::Lower)),
-            'Ộ' => Some((BaseVowel::OCircumflex, Tone::Dot, Case::Upper)),
-            'ấ' => Some((BaseVowel::ACircumflex, Tone::Acute, Case::Lower)),
-            'Ấ' => Some((BaseVowel::ACircumflex, Tone::Acute, Case::Upper)),
-            'ầ' => Some((BaseVowel::ACircumflex, Tone::Grave, Case::Lower)),
-            'Ầ' => Some((BaseVowel::ACircumflex, Tone::Grave, Case::Upper)),
-            'ẩ' => Some((BaseVowel::ACircumflex, Tone::Hook, Case::Lower)),
-            'Ẩ' => Some((BaseVowel::ACircumflex, Tone::Hook, Case::Upper)),
-            'ẫ' => Some((BaseVowel::ACircumflex, Tone::Tilde, Case::Lower)),
-            'Ẫ' => Some((BaseVowel::ACircumflex, Tone::Tilde, Case::Upper)),
-            'ậ' => Some((BaseVowel::ACircumflex, Tone::Dot, Case::Lower)),
-            'Ậ' => Some((BaseVowel::ACircumflex, Tone::Dot, Case::Upper)),
-            'ứ' => Some((BaseVowel::UHorn, Tone::Acute, Case::Lower)),
-            'Ứ' => Some((BaseVowel::UHorn, Tone::Acute, Case::Upper)),
-            'ừ' => Some((BaseVowel::UHorn, Tone::Grave, Case::Lower)),
-            'Ừ' => Some((BaseVowel::UHorn, Tone::Grave, Case::Upper)),
-            'ử' => Some((BaseVowel::UHorn, Tone::Hook, Case::Lower)),
-            'Ử' => Some((BaseVowel::UHorn, Tone::Hook, Case::Upper)),
-            'ữ' => Some((BaseVowel::UHorn, Tone::Tilde, Case::Lower)),
-            'Ữ' => Some((BaseVowel::UHorn, Tone::Tilde, Case::Upper)),
-            'ự' => Some((BaseVowel::UHorn, Tone::Dot, Case::Lower)),
-            'Ự' => Some((BaseVowel::UHorn, Tone::Dot, Case::Upper)),
-            'ả' => Some((BaseVowel::A, Tone::Hook, Case::Lower)),
-            'Ả' => Some((BaseVowel::A, Tone::Hook, Case::Upper)),
-            'ạ' => Some((BaseVowel::A, Tone::Dot, Case::Lower)),
-            'Ạ' => Some((BaseVowel::A, Tone::Dot, Case::Upper)),
-            'ỏ' => Some((BaseVowel::O, Tone::Hook, Case::Lower)),
-            'Ỏ' => Some((BaseVowel::O, Tone::Hook, Case::Upper)),
-            'ọ' => Some((BaseVowel::O, Tone::Dot, Case::Lower)),
-            'Ọ' => Some((BaseVowel::O, Tone::Dot, Case::Upper)),
-            'ẻ' => Some((BaseVowel::E, Tone::Hook, Case::Lower)),
-            'Ẻ' => Some((BaseVowel::E, Tone::Hook, Case::Upper)),
-            'ẽ' => Some((BaseVowel::E, Tone::Tilde, Case::Lower)),
-            'Ẽ' => Some((BaseVowel::E, Tone::Tilde, Case::Upper)),
-            'ẹ' => Some((BaseVowel::E, Tone::Dot, Case::Lower)),
-            'Ẹ' => Some((BaseVowel::E, Tone::Dot, Case::Upper)),
-            'ỉ' => Some((BaseVowel::I, Tone::Hook, Case::Lower)),
-            'Ỉ' => Some((BaseVowel::I, Tone::Hook, Case::Upper)),
-            'ị' => Some((BaseVowel::I, Tone::Dot, Case::Lower)),
-            'Ị' => Some((BaseVowel::I, Tone::Dot, Case::Upper)),
-            'ủ' => Some((BaseVowel::U, Tone::Hook, Case::Lower)),
-            'Ủ' => Some((BaseVowel::U, Tone::Hook, Case::Upper)),
-            'ụ' => Some((BaseVowel::U, Tone::Dot, Case::Lower)),
-            'Ụ' => Some((BaseVowel::U, Tone::Dot, Case::Upper)),
-            'ỳ' => Some((BaseVowel::Y, Tone::Grave, Case::Lower)),
-            'Ỳ' => Some((BaseVowel::Y, Tone::Grave, Case::Upper)),
-            'ỷ' => Some((BaseVowel::Y, Tone::Hook, Case::Lower)),
-            'Ỷ' => Some((BaseVowel::Y, Tone::Hook, Case::Upper)),
-            'ỹ' => Some((BaseVowel::Y, Tone::Tilde, Case::Lower)),
-            'Ỹ' => Some((BaseVowel::Y, Tone::Tilde, Case::Upper)),
-            'ỵ' => Some((BaseVowel::Y, Tone::Dot, Case::Lower)),
-            'Ỵ' => Some((BaseVowel::Y, Tone::Dot, Case::Upper)),
-            _ => None,
+            'ớ' => Ok((BaseVowel::OHorn, Tone::Acute, Case::Lower)),
+            'Ớ' => Ok((BaseVowel::OHorn, Tone::Acute, Case::Upper)),
+            'ờ' => Ok((BaseVowel::OHorn, Tone::Grave, Case::Lower)),
+            'Ờ' => Ok((BaseVowel::OHorn, Tone::Grave, Case::Upper)),
+            'ở' => Ok((BaseVowel::OHorn, Tone::Hook, Case::Lower)),
+            'Ở' => Ok((BaseVowel::OHorn, Tone::Hook, Case::Upper)),
+            'ỡ' => Ok((BaseVowel::OHorn, Tone::Tilde, Case::Lower)),
+            'Ỡ' => Ok((BaseVowel::OHorn, Tone::Tilde, Case::Upper)),
+            'ợ' => Ok((BaseVowel::OHorn, Tone::Dot, Case::Lower)),
+            'Ợ' => Ok((BaseVowel::OHorn, Tone::Dot, Case::Upper)),
+            'ế' => Ok((BaseVowel::ECircumflex, Tone::Acute, Case::Lower)),
+            'Ế' => Ok((BaseVowel::ECircumflex, Tone::Acute, Case::Upper)),
+            'ề' => Ok((BaseVowel::ECircumflex, Tone::Grave, Case::Lower)),
+            'Ề' => Ok((BaseVowel::ECircumflex, Tone::Grave, Case::Upper)),
+            'ể' => Ok((BaseVowel::ECircumflex, Tone::Hook, Case::Lower)),
+            'Ể' => Ok((BaseVowel::ECircumflex, Tone::Hook, Case::Upper)),
+            'ễ' => Ok((BaseVowel::ECircumflex, Tone::Tilde, Case::Lower)),
+            'Ễ' => Ok((BaseVowel::ECircumflex, Tone::Tilde, Case::Upper)),
+            'ệ' => Ok((BaseVowel::ECircumflex, Tone::Dot, Case::Lower)),
+            'Ệ' => Ok((BaseVowel::ECircumflex, Tone::Dot, Case::Upper)),
+            'ắ' => Ok((BaseVowel::ABreve, Tone::Acute, Case::Lower)),
+            'Ắ' => Ok((BaseVowel::ABreve, Tone::Acute, Case::Upper)),
+            'ằ' => Ok((BaseVowel::ABreve, Tone::Grave, Case::Lower)),
+            'Ằ' => Ok((BaseVowel::ABreve, Tone::Grave, Case::Upper)),
+            'ẳ' => Ok((BaseVowel::ABreve, Tone::Hook, Case::Lower)),
+            'Ẳ' => Ok((BaseVowel::ABreve, Tone::Hook, Case::Upper)),
+            'ẵ' => Ok((BaseVowel::ABreve, Tone::Tilde, Case::Lower)),
+            'Ẵ' => Ok((BaseVowel::ABreve, Tone::Tilde, Case::Upper)),
+            'ặ' => Ok((BaseVowel::ABreve, Tone::Dot, Case::Lower)),
+            'Ặ' => Ok((BaseVowel::ABreve, Tone::Dot, Case::Upper)),
+            'ố' => Ok((BaseVowel::OCircumflex, Tone::Acute, Case::Lower)),
+            'Ố' => Ok((BaseVowel::OCircumflex, Tone::Acute, Case::Upper)),
+            'ồ' => Ok((BaseVowel::OCircumflex, Tone::Grave, Case::Lower)),
+            'Ồ' => Ok((BaseVowel::OCircumflex, Tone::Grave, Case::Upper)),
+            'ổ' => Ok((BaseVowel::OCircumflex, Tone::Hook, Case::Lower)),
+            'Ổ' => Ok((BaseVowel::OCircumflex, Tone::Hook, Case::Upper)),
+            'ỗ' => Ok((BaseVowel::OCircumflex, Tone::Tilde, Case::Lower)),
+            'Ỗ' => Ok((BaseVowel::OCircumflex, Tone::Tilde, Case::Upper)),
+            'ộ' => Ok((BaseVowel::OCircumflex, Tone::Dot, Case::Lower)),
+            'Ộ' => Ok((BaseVowel::OCircumflex, Tone::Dot, Case::Upper)),
+            'ấ' => Ok((BaseVowel::ACircumflex, Tone::Acute, Case::Lower)),
+            'Ấ' => Ok((BaseVowel::ACircumflex, Tone::Acute, Case::Upper)),
+            'ầ' => Ok((BaseVowel::ACircumflex, Tone::Grave, Case::Lower)),
+            'Ầ' => Ok((BaseVowel::ACircumflex, Tone::Grave, Case::Upper)),
+            'ẩ' => Ok((BaseVowel::ACircumflex, Tone::Hook, Case::Lower)),
+            'Ẩ' => Ok((BaseVowel::ACircumflex, Tone::Hook, Case::Upper)),
+            'ẫ' => Ok((BaseVowel::ACircumflex, Tone::Tilde, Case::Lower)),
+            'Ẫ' => Ok((BaseVowel::ACircumflex, Tone::Tilde, Case::Upper)),
+            'ậ' => Ok((BaseVowel::ACircumflex, Tone::Dot, Case::Lower)),
+            'Ậ' => Ok((BaseVowel::ACircumflex, Tone::Dot, Case::Upper)),
+            'ứ' => Ok((BaseVowel::UHorn, Tone::Acute, Case::Lower)),
+            'Ứ' => Ok((BaseVowel::UHorn, Tone::Acute, Case::Upper)),
+            'ừ' => Ok((BaseVowel::UHorn, Tone::Grave, Case::Lower)),
+            'Ừ' => Ok((BaseVowel::UHorn, Tone::Grave, Case::Upper)),
+            'ử' => Ok((BaseVowel::UHorn, Tone::Hook, Case::Lower)),
+            'Ử' => Ok((BaseVowel::UHorn, Tone::Hook, Case::Upper)),
+            'ữ' => Ok((BaseVowel::UHorn, Tone::Tilde, Case::Lower)),
+            'Ữ' => Ok((BaseVowel::UHorn, Tone::Tilde, Case::Upper)),
+            'ự' => Ok((BaseVowel::UHorn, Tone::Dot, Case::Lower)),
+            'Ự' => Ok((BaseVowel::UHorn, Tone::Dot, Case::Upper)),
+            'ả' => Ok((BaseVowel::A, Tone::Hook, Case::Lower)),
+            'Ả' => Ok((BaseVowel::A, Tone::Hook, Case::Upper)),
+            'ạ' => Ok((BaseVowel::A, Tone::Dot, Case::Lower)),
+            'Ạ' => Ok((BaseVowel::A, Tone::Dot, Case::Upper)),
+            'ỏ' => Ok((BaseVowel::O, Tone::Hook, Case::Lower)),
+            'Ỏ' => Ok((BaseVowel::O, Tone::Hook, Case::Upper)),
+            'ọ' => Ok((BaseVowel::O, Tone::Dot, Case::Lower)),
+            'Ọ' => Ok((BaseVowel::O, Tone::Dot, Case::Upper)),
+            'ẻ' => Ok((BaseVowel::E, Tone::Hook, Case::Lower)),
+            'Ẻ' => Ok((BaseVowel::E, Tone::Hook, Case::Upper)),
+            'ẽ' => Ok((BaseVowel::E, Tone::Tilde, Case::Lower)),
+            'Ẽ' => Ok((BaseVowel::E, Tone::Tilde, Case::Upper)),
+            'ẹ' => Ok((BaseVowel::E, Tone::Dot, Case::Lower)),
+            'Ẹ' => Ok((BaseVowel::E, Tone::Dot, Case::Upper)),
+            'ỉ' => Ok((BaseVowel::I, Tone::Hook, Case::Lower)),
+            'Ỉ' => Ok((BaseVowel::I, Tone::Hook, Case::Upper)),
+            'ị' => Ok((BaseVowel::I, Tone::Dot, Case::Lower)),
+            'Ị' => Ok((BaseVowel::I, Tone::Dot, Case::Upper)),
+            'ủ' => Ok((BaseVowel::U, Tone::Hook, Case::Lower)),
+            'Ủ' => Ok((BaseVowel::U, Tone::Hook, Case::Upper)),
+            'ụ' => Ok((BaseVowel::U, Tone::Dot, Case::Lower)),
+            'Ụ' => Ok((BaseVowel::U, Tone::Dot, Case::Upper)),
+            'ỳ' => Ok((BaseVowel::Y, Tone::Grave, Case::Lower)),
+            'Ỳ' => Ok((BaseVowel::Y, Tone::Grave, Case::Upper)),
+            'ỷ' => Ok((BaseVowel::Y, Tone::Hook, Case::Lower)),
+            'Ỷ' => Ok((BaseVowel::Y, Tone::Hook, Case::Upper)),
+            'ỹ' => Ok((BaseVowel::Y, Tone::Tilde, Case::Lower)),
+            'Ỹ' => Ok((BaseVowel::Y, Tone::Tilde, Case::Upper)),
+            'ỵ' => Ok((BaseVowel::Y, Tone::Dot, Case::Lower)),
+            'Ỵ' => Ok((BaseVowel::Y, Tone::Dot, Case::Upper)),
+            _ => Err(()),
         },
 
-        _ => None,
+        _ => Err(()),
     }
 }
 
 /// Decodes and keeps only the [`BaseVowel`] part.
 #[inline(always)]
-pub const fn decode_vowel_base(character: char) -> Option<BaseVowel> {
+pub const fn decode_vowel_base(character: char) -> Result<BaseVowel, ()> {
     match decode_vowel(character) {
-        Some((base, _, _)) => Some(base),
-        None => None,
+        Ok((base, _, _)) => Ok(base),
+        Err(()) => Err(()),
     }
 }
 
 /// Decodes and keeps only the [`Tone`] part.
 #[inline(always)]
-pub const fn decode_vowel_tone(character: char) -> Option<Tone> {
+pub const fn decode_vowel_tone(character: char) -> Result<Tone, ()> {
     match decode_vowel(character) {
-        Some((_, tone, _)) => Some(tone),
-        None => None,
+        Ok((_, tone, _)) => Ok(tone),
+        Err(()) => Err(()),
     }
 }
 
 /// Decodes and keeps only the [`Case`] part.
 #[inline(always)]
-pub const fn decode_vowel_case(character: char) -> Option<Case> {
+pub const fn decode_vowel_case(character: char) -> Result<Case, ()> {
     match decode_vowel(character) {
-        Some((_, _, case)) => Some(case),
-        None => None,
+        Ok((_, _, case)) => Ok(case),
+        Err(()) => Err(()),
     }
 }
 
@@ -481,11 +493,12 @@ mod tests {
     #[test]
     fn base_vowels_are_priority_ordered() {
         for id in 0..12 {
+            let base = BaseVowel::from_id(id).unwrap();
             assert_eq!(
-                BaseVowel::from_id(id).id(),
+                base.id(),
                 id,
                 "{:?} must have Priority ID {id}",
-                BaseVowel::from_id(id)
+                base
             );
         }
         // Highest (0) outranks everything; lowest (11) outranks nothing but Y.
@@ -500,7 +513,7 @@ mod tests {
     #[test]
     fn encodes_and_decodes_every_lowercase_vowel() {
         for (id, row) in ALL_LOWER.iter().enumerate() {
-            let base = BaseVowel::from_id(id);
+            let base = BaseVowel::from_id(id).unwrap();
             for (tone_idx, &expected) in row.iter().enumerate() {
                 let tone = Tone::from_id(tone_idx);
                 assert_eq!(
@@ -510,7 +523,7 @@ mod tests {
                 );
                 assert_eq!(
                     decode_vowel(expected),
-                    Some((base, tone, Case::Lower)),
+                    Ok((base, tone, Case::Lower)),
                     "decode('{expected}')"
                 );
             }
@@ -521,7 +534,7 @@ mod tests {
     #[test]
     fn encodes_and_decodes_every_uppercase_vowel() {
         for (id, row) in ALL_LOWER.iter().enumerate() {
-            let base = BaseVowel::from_id(id);
+            let base = BaseVowel::from_id(id).unwrap();
             for (tone_idx, &lower) in row.iter().enumerate() {
                 let tone = Tone::from_id(tone_idx);
                 let expected = lower.to_uppercase().next().unwrap();
@@ -532,7 +545,7 @@ mod tests {
                 );
                 assert_eq!(
                     decode_vowel(expected),
-                    Some((base, tone, Case::Upper)),
+                    Ok((base, tone, Case::Upper)),
                     "decode('{expected}')"
                 );
             }
@@ -543,14 +556,14 @@ mod tests {
     #[test]
     fn round_trips_all_vowels() {
         for id in 0..12 {
-            let base = BaseVowel::from_id(id);
+            let base = BaseVowel::from_id(id).unwrap();
             for tone_idx in 0..6 {
                 for &case in &[Case::Lower, Case::Upper] {
                     let tone = Tone::from_id(tone_idx);
                     let ch = encode_vowel(base, tone, case);
                     assert_eq!(
                         decode_vowel(ch),
-                        Some((base, tone, case)),
+                        Ok((base, tone, case)),
                         "round trip {base:?} {tone:?} {case:?} -> '{ch}'"
                     );
                 }
@@ -563,7 +576,7 @@ mod tests {
     fn decodes_every_precomposed_char() {
         let mut seen = 0;
         for c in ALL_LOWER.into_iter().flatten() {
-            let decoded = decode_vowel(c).unwrap_or_else(|| panic!("'{c}' should decode"));
+            let decoded = decode_vowel(c).unwrap_or_else(|()| panic!("'{c}' should decode"));
             seen += 1;
             let (base, tone, case) = decoded;
             assert_eq!(
@@ -579,7 +592,7 @@ mod tests {
     #[test]
     fn rejects_non_vowels() {
         for ch in ['q', 'w', 'x', 'z', 'đ', '1', '!', ' '] {
-            assert_eq!(decode_vowel(ch), None, "decode('{ch}') should be None");
+            assert_eq!(decode_vowel(ch), Err(()), "decode('{ch}') should fail");
         }
     }
 
@@ -603,7 +616,7 @@ mod tests {
             };
             assert_eq!(
                 is_vowel(ch),
-                decode_vowel(ch).is_some(),
+                decode_vowel(ch).is_ok(),
                 "mismatch at U+{cp:04X}"
             );
         }

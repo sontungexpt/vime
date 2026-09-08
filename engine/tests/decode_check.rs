@@ -8,12 +8,12 @@ fn exhaustive_decode_consistency() {
         let ch = match char::from_u32(cp) {
             Some(c) => c,
             None => {
-                assert_eq!(decode_vowel('\0'), None);
+                assert_eq!(decode_vowel('\0'), Err(()));
                 continue;
             }
         };
 
-        if let Some((base, tone, case)) = decode_vowel(ch) {
+        if let Ok((base, tone, case)) = decode_vowel(ch) {
             decoded_count += 1;
             assert_eq!(
                 encode_vowel(base, tone, case),
@@ -35,12 +35,12 @@ fn exhaustive_decode_consistency() {
         .map(|c| c.to_uppercase().next().unwrap())
         .collect();
     for c in lower.iter().chain(upper.iter()) {
-        assert!(decode_vowel(*c).is_some(), "'{c}' must decode");
+        assert!(decode_vowel(*c).is_ok(), "'{c}' must decode");
     }
 
     // Chars that MUST NOT decode
     for c in ['q', 'w', 'x', 'z', 'đ', 'Đ', '1', '!', ' ', 'å'] {
-        assert_eq!(decode_vowel(c), None, "'{c}' must NOT decode");
+        assert_eq!(decode_vowel(c), Err(()), "'{c}' must NOT decode");
     }
 
     // Decode must cover exactly the 144-chars table (72 lower + 72 upper)
@@ -55,14 +55,14 @@ fn decode_all_precomposed_chars() {
     // Full expected set from ENCODED_VOWELS layout: base x tone x case
     let mut seen = 0;
     for id in 0..12usize {
-        let base = BaseVowel::from_id(id);
+        let base = BaseVowel::from_id(id).unwrap();
         for tone_idx in 0..6usize {
             let tone = Tone::from_id(tone_idx);
             for case in [Case::Lower, Case::Upper] {
                 let ch = encode_vowel(base, tone, case);
                 assert_eq!(
                     decode_vowel(ch),
-                    Some((base, tone, case)),
+                    Ok((base, tone, case)),
                     "decode('{ch}') mismatch for {base:?} {tone:?} {case:?}"
                 );
                 seen += 1;
