@@ -1,9 +1,9 @@
 mod api;
-mod config;
-mod operation;
+mod action;
 mod simple;
 
 pub use api::{Interpreter, KeyContext};
-pub use config::{InterpreterConfig, ShapeConfig, ShapeFamily, ToneConfig};
-pub use operation::Operation;
-pub use simple::SimpleInterpreter;
+pub use action::Action;
+pub use simple::{
+    InterpreterConfig, ShapeConfig, ShapeFamily, SimpleInterpreter, ToneConfig,
+};

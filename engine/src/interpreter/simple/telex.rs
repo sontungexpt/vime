@@ -1,5 +1,5 @@
-use super::super::{InterpreterConfig, ShapeConfig, ToneConfig};
-use crate::{RootVowel, Shape, ShapeFamily, Tone};
+use super::{InterpreterConfig, ShapeConfig, ShapeFamily, ToneConfig};
+use crate::{RootVowel, Shape, Tone};
 
 pub(crate) const CONFIG: &InterpreterConfig = &InterpreterConfig {
     tone_keys: &[

@@ -1,20 +1,8 @@
-use crate::{Interpreter, SimpleInterpreter, SimpleRenderer};
-
 /// User-configurable engine behavior.
-pub struct Config<I: Interpreter = SimpleInterpreter<'static>> {
-    pub renderer: SimpleRenderer<I>,
-}
+pub struct Config {}
 
-impl<I: Interpreter> Config<I> {
-    pub const fn new(renderer: SimpleRenderer<I>) -> Self {
-        Self { renderer }
-    }
-}
-
-impl Default for Config<SimpleInterpreter<'static>> {
+impl Default for Config {
     fn default() -> Self {
-        Self {
-            renderer: SimpleRenderer::default(),
-        }
+        Self {}
     }
 }

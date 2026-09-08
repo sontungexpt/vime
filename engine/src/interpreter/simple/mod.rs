@@ -1,9 +1,13 @@
 use crate::phonology::decode_vowel_base;
 
+mod config;
 mod telex;
 mod vni;
+mod viqr;
 
-use super::{api::KeyContext, config::InterpreterConfig, Operation, ShapeFamily};
+pub use config::{InterpreterConfig, ShapeConfig, ShapeFamily, ToneConfig};
+
+use super::{api::KeyContext, Action};
 use super::Interpreter;
 
 /// Configuration-driven interpreter implementation.
@@ -31,6 +35,11 @@ impl<'a> SimpleInterpreter<'a> {
     }
 
     #[inline(always)]
+    pub const fn viqr() -> Self {
+        Self::new(viqr::CONFIG)
+    }
+
+    #[inline(always)]
     pub const fn config(&self) -> &InterpreterConfig<'a> {
         self.config
     }
@@ -38,24 +47,22 @@ impl<'a> SimpleInterpreter<'a> {
     /// Returns whether `key` is configured as a tone or shape key.
     #[inline(always)]
     pub const fn is_modifier_key(&self, key: char) -> bool {
-        let lk = key.to_ascii_lowercase();
+        let key = key.to_ascii_lowercase();
 
-        let tone_keys = self.config.tone_keys;
         let mut i = 0;
-        while i < tone_keys.len() {
-            if tone_keys[i].key == lk {
+        while i < self.config.tone_keys.len() {
+            if self.config.tone_keys[i].key == key {
                 return true;
             }
             i += 1;
         }
 
-        let shape_keys = self.config.shape_keys;
-        let mut j = 0;
-        while j < shape_keys.len() {
-            if shape_keys[j].key == lk {
+        let mut i = 0;
+        while i < self.config.shape_keys.len() {
+            if self.config.shape_keys[i].key == key {
                 return true;
             }
-            j += 1;
+            i += 1;
         }
 
         false
@@ -63,12 +70,12 @@ impl<'a> SimpleInterpreter<'a> {
 }
 
 impl Interpreter for SimpleInterpreter<'_> {
-    fn interpret(&self, context: KeyContext, input: char) -> Operation {
+    fn interpret(&self, context: KeyContext, input: char) -> Action {
         let config = self.config;
         let lk = input.to_ascii_lowercase();
 
         if let Some(entry) = config.tone_keys.iter().find(|entry| entry.key == lk) {
-            return Operation::Toneable(input, entry.tone);
+            return Action::Toneable(input, entry.tone);
         }
 
         if let Some(target) = context.target {
@@ -89,11 +96,11 @@ impl Interpreter for SimpleInterpreter<'_> {
                     .iter()
                     .find(|entry| entry.target == target && entry.key == lk)
                 {
-                    return Operation::Shapeable(input, entry.shape);
+                    return Action::Shapeable(input, entry.shape);
                 }
             }
         }
 
-        Operation::Insert(input)
+        Action::Insert(input)
     }
 }

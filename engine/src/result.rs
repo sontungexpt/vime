@@ -1,11 +1,11 @@
 /// Semantic result of processing one input.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Result {
-    /// Composition state changed; frontends should re-render the preedit
+    /// Input buffer state changed; frontends should re-render the preedit
     /// from the current state's rendered text.
     Changed,
     /// A word was finalized; the string must be committed to the
-    /// application and the composition buffer cleared.
+    /// application and the input buffer cleared.
     Commit(String),
     /// The input was consumed but produced no visible change.
     Noop,

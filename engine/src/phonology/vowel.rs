@@ -91,7 +91,7 @@ impl BaseVowel {
     pub const MAX_ID: u8 = Self::LEN - 1;
 
     /// All base vowels in priority order; the index equals the priority ID.
-    const ALL: [BaseVowel; 12] = [
+    const ALL: [BaseVowel; Self::LEN as usize] = [
         BaseVowel::OHorn,
         BaseVowel::ECircumflex,
         BaseVowel::ABreve,

@@ -5,8 +5,6 @@ pub enum Input {
     Delete,
     Left,
     Right,
-    Home,
-    End,
     Enter,
     Escape,
     Tab,

@@ -163,8 +163,8 @@ impl Onset {
     }
 
     const ENCODED_CHARS: &[&str] = &[
-        "NONE", "b", "c", "ch", "d", "gi", "đ", "g", "gh", "h", "k", "kh", "l", "m", "n", "ng",
-        "ngh", "p", "ph", "qu", "r", "s", "t", "th", "tr", "v", "x",
+        "", "b", "c", "ch", "d", "đ", "g", "gh", "gi", "h", "k", "kh", "l", "m", "n", "ng", "ngh",
+        "p", "ph", "qu", "r", "s", "t", "th", "tr", "v", "x",
     ];
 
     /// Converts the onset to a human-readable string.

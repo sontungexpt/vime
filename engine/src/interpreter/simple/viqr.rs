@@ -1,66 +1,67 @@
 use super::{InterpreterConfig, ShapeConfig, ShapeFamily, ToneConfig};
 use crate::{RootVowel, Shape, Tone};
 
+/// Standard VIQR keyboard mappings.
 pub(crate) const CONFIG: &InterpreterConfig = &InterpreterConfig {
     tone_keys: &[
         ToneConfig {
-            key: '1',
+            key: '\'',
             tone: Tone::Acute,
         },
         ToneConfig {
-            key: '2',
+            key: '`',
             tone: Tone::Grave,
         },
         ToneConfig {
-            key: '3',
+            key: '?',
             tone: Tone::Hook,
         },
         ToneConfig {
-            key: '4',
+            key: '~',
             tone: Tone::Tilde,
         },
         ToneConfig {
-            key: '5',
+            key: '.',
             tone: Tone::Dot,
         },
         ToneConfig {
-            key: '0',
+            key: 'z',
             tone: Tone::Flat,
         },
     ],
     shape_keys: &[
         ShapeConfig {
-            key: '6',
+            key: '^',
             target: ShapeFamily::Vowel(RootVowel::A),
             shape: Shape::Circumflex,
         },
         ShapeConfig {
-            key: '7',
-            target: ShapeFamily::Vowel(RootVowel::A),
-            shape: Shape::Breve,
-        },
-        ShapeConfig {
-            key: '6',
+            key: '^',
             target: ShapeFamily::Vowel(RootVowel::E),
             shape: Shape::Circumflex,
         },
         ShapeConfig {
-            key: '6',
+            key: '^',
             target: ShapeFamily::Vowel(RootVowel::O),
             shape: Shape::Circumflex,
         },
         ShapeConfig {
-            key: '7',
+            key: '(',
+            target: ShapeFamily::Vowel(RootVowel::A),
+            shape: Shape::Breve,
+        },
+        ShapeConfig {
+            key: '+',
             target: ShapeFamily::Vowel(RootVowel::O),
             shape: Shape::Horn,
         },
         ShapeConfig {
-            key: '8',
+            key: '+',
             target: ShapeFamily::Vowel(RootVowel::U),
             shape: Shape::Horn,
         },
         ShapeConfig {
-            key: '9',
+            key: 'd',
             target: ShapeFamily::D,
             shape: Shape::Stroke,
         },

@@ -2,7 +2,7 @@ pub mod syllable;
 
 pub use syllable::ParsedSyllable;
 
-use crate::{Interpreter, SimpleInterpreter};
+use crate::{processor, Interpreter, SimpleInterpreter};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Orthography {
@@ -43,15 +43,8 @@ impl<I: Interpreter> SimpleRenderer<I> {
 
 impl<I: Interpreter> Renderer for SimpleRenderer<I> {
     fn render(&self, raw: &[char], cursor: usize) -> String {
-        // Not thing to compute
-        if raw.len() < 2 {
-            return raw.iter().collect();
-        }
-        // if cursor >= raw.len() {
-        //     return raw.iter().collect();
-        // }
-
-        String::new()
+        let _ = cursor;
+        processor::render_raw(raw)
     }
 }
 
