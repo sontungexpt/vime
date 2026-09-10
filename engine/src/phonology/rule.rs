@@ -41,6 +41,7 @@ pub const fn match_vowel_sequence(vowels: &[BaseVowel]) -> SequenceStatus {
         // ─────────────────── u ───────────────────
         [U, A] => Valid,
         [U, O] => InComplete,
+        [U, OHorn] => Valid,
         [U, OCircumflex] => Valid,
 
         [U, Y] => Valid,

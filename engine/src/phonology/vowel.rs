@@ -656,7 +656,6 @@ mod tests {
                 Shape::Circumflex,
                 Shape::Breve,
                 Shape::Horn,
-                Shape::Stroke,
             ] {
                 assert_eq!(
                     base.replace_shape(shape),

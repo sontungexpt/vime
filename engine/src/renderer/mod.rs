@@ -2,7 +2,7 @@ mod api;
 pub mod parser;
 
 pub use api::Renderer;
-pub use parser::{ParsedVowel, Parser, Syllable};
+pub use parser::{Cased, Parser, Syllable};
 
 use crate::{DefaultKeyMapping, KeyMapping};
 

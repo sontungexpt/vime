@@ -37,6 +37,6 @@ pub use phonology::{
     decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, RootVowel, Shape, Tone,
 };
 pub use renderer::{
-    Orthography, ParsedVowel, Parser, Renderer, SimpleRenderer, Syllable,
+    Cased, Orthography, Parser, Renderer, SimpleRenderer, Syllable,
 };
 pub use result::Result;
