@@ -14,8 +14,8 @@ use super::syllable::{Cased, Syllable};
 const fn is_ascii_consonant(c: char) -> bool {
     matches!(
         c,
-        'b'..='d' | 'f'..='h' | 'j'..='n' | 'p'..='t' | 'v'..='z' |
-        'B'..='D' | 'F'..='H' | 'J'..='N' | 'P'..='T' | 'V'..='Z' |
+        'b'..='d' | 'f'..='h' | 'j'..='n' | 'p'..='t' | 'v'..='x' | 'z' |
+        'B'..='D' | 'F'..='H' | 'J'..='N' | 'P'..='T' | 'V'..='X' | 'Z' |
         'đ' | 'Đ'
     )
 }

@@ -19,6 +19,7 @@ pub enum Onset {
     L,
     M,
     N,
+    Nh,
     Ng,
     Ngh,
     P,
@@ -35,7 +36,7 @@ pub enum Onset {
 
 impl Onset {
     pub const MAX_ONSET_LEN: usize = 3;
-    pub const COUNT: usize = 27 as usize;
+    pub const COUNT: usize = 28 as usize;
     pub const MAX_ID: usize = Self::COUNT - 1;
 
     /// O(1) lookup from a numeric ID. Returns `Err(())` for out-of-bounds IDs.
@@ -84,6 +85,7 @@ impl Onset {
                 [b'g', b'h'] => Ok(Self::Gh),
                 [b'g', b'i'] => Ok(Self::Gi),
                 [b'k', b'h'] => Ok(Self::Kh),
+                [b'n', b'h'] => Ok(Self::Nh),
                 [b'n', b'g'] => Ok(Self::Ng),
                 [b'p', b'h'] => Ok(Self::Ph),
                 [b'q', b'u'] => Ok(Self::QU),

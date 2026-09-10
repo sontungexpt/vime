@@ -233,10 +233,10 @@ const B_TONES: &[TestCase] = &[
     case!(['u', 'r'], "ủ"),
     case!(['u', 'x'], "ũ"),
     case!(['u', 'j'], "ụ"),
-    // y as first letter is an onset consonant (see KNOWN_DEVIATIONS for the
-    // intended vowel behavior), so `ý` sentence-final words are unreachable.
-    case!(['y', 's'], "ys"),
-    case!(['y', 'f'], "yf"),
+    // y is a vowel; `yếu`-style spellings work (see KNOWN_DEVIATIONS for `nhà`)
+    case!(['y', 's'], "ý"),
+    case!(['y', 'f'], "ỳ"),
+    case!(['y', 'r'], "ỷ"),
     // ── `z` resets an existing tone to flat ──
     case!(['á', 'z'], "a"),
     case!(['à', 'z'], "a"),
@@ -247,7 +247,7 @@ const B_TONES: &[TestCase] = &[
     // ── tone after a coda ──
     case!(['a', 'n', 's'], "án"),
     case!(['b', 'a', 'c', 'j'], "bạc"),
-    case!(['t', 'o', 'a', 'n', 'j'], "tọan"),
+    case!(['t', 'o', 'a', 'n', 'j'], "toạn"),
     // ── tone on two-vowel nuclei (flat placement on the first) ──
     case!(['a', 'i', 's'], "ái"),
     case!(['o', 'i', 's'], "ói"),
@@ -434,7 +434,7 @@ const F_VNI: &[TestCase] = &[
     case!(['q', 'u', 'a', '1'], "quá"),
     // ── real syllables ──
     case!(['m', 'u', 'o', '6', 'n', '1'], "muốn"),
-    case!(['c', 'h', 'o', 'a', '1'], "chóa"),
+    case!(['c', 'h', 'o', 'a', '1'], "choá"),
     case!(['d', '9', 'e', 'p', '5'], "đẹp"),
     case!(['v', 'i', 'e', '6', 't', '5'], "việt"),
     case!(['n', 'g', 'ư', 'ơ', 'i', '2'], "người"),
@@ -531,8 +531,8 @@ const H_UPPERCASE: &[TestCase] = &[
     case!(['A', 'J'], "Ạ"),
     case!(['E', 'F'], "È"),
     case!(['U', 'S'], "Ú"),
-    // uppercase `Y` is an onset consonant, tone key falls through as a letter
-    case!(['Y', 'S'], "YS"),
+    // uppercase `Y` is a vowel, tone applies to it
+    case!(['Y', 'S'], "Ý"),
     // ── uppercase precomposed stays uppercase ──
     case!(['Ắ'], "Ắ"),
     case!(['Ằ'], "Ằ"),
@@ -611,13 +611,6 @@ const J_DEAD_TELEX: &[DeadCase] = &[
     dead_case!(['j', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
     dead_case!(['f', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
     dead_case!(['g', 'r', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
-    dead_case!(['y', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
-    // TODO(known gap): Onset has no `Nh` variant, so `nh…` cannot be formed.
-    // `nha` should reach the vowel phase; today it dies.
-    dead_case!(
-        ['n', 'h', 'a'],
-        ParseStatus::Dead(DeadReason::InvalidOnset)
-    ),
     // ── InvalidVowelSequence ──
     dead_case!(
         ['i', 'e', 'u', 'n'],
@@ -715,30 +708,23 @@ const K_SYLLABLES: &[TestCase] = &[
     case!(['s', 'ư', 'a', 'r'], "sửa"),
     case!(['m', 'ư', 'a', 's'], "mứa"),
     case!(['q', 'u', 'y'], "quy"),
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Documented deviations from the standard orthography (the parser today
-// produces these; the correct Vietnamese spelling is asserted instead so the
-// failure is visible in the test report).
-//
-// See: renderer/default.rs tone placement (oa/oe + ao), and the missing
-// y-after-qu and Nh-onset handling in the parser.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const DEVIATIONS_TELEX: &[TestCase] = &[
-    // modern orthography: tone on `a` of `oa`
-    case!(['t', 'o', 'a', 'n', 's'], "toán"), // today → "tóan"
-    case!(['t', 'o', 'a', 'f'], "toà"),       // today → "tòa"
-    case!(['h', 'o', 'a', 'j'], "hoạ"),       // today → "họa"
-    // tone on `o` of `ao`
-    case!(['a', 'o', 's'], "áo"), // today → "aó"
-    // `quý`: the `y` must be a vowel after `qu`
-    case!(['q', 'u', 'y', 's'], "quý"), // today → "quys"
-    // `nh` onset is missing entirely
-    case!(['n', 'h', 'a', 'f'], "nhà"), // today → Dead(InvalidOnset)
-    // vowel-initial `y` is treated as a consonant onset
-    case!(['y', 'e', 'e', 'u', 's'], "yếu"), // today → Dead(InvalidOnset)
+    case!(['q', 'u', 'y', 's'], "quý"),
+    case!(['t', 'o', 'a', 'n', 's'], "toán"),
+    case!(['t', 'o', 'a', 'f'], "toà"),
+    case!(['h', 'o', 'a', 'j'], "hoạ"),
+    case!(['a', 'o', 's'], "áo"),
+    case!(['y', 'e', 'e', 'u', 's'], "yếu"),
+    // y as zero onset in common closed syllables
+    case!(['y', 'ê', 'u'], "yêu"),
+    case!(['y', 'ê', 'u', 'f'], "yều"),
+    // nh onset
+    case!(['n', 'h', 'a'], "nha"),
+    case!(['n', 'h', 'a', 'f'], "nhà"),
+    case!(['n', 'h', 'a', 'r'], "nhả"),
+    case!(['n', 'h', 'a', 'j'], "nhạ"),
+    case!(['n', 'h', 'i', 'ê', 'u', 'f'], "nhiều"),
+    case!(['n', 'h', 'ậ', 't'], "nhật"),
+    case!(['n', 'h', 'a', 'n', 'h', 's'], "nhánh"),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -790,15 +776,4 @@ fn dead_corpus() {
     let vni = DefaultKeyMapping::vni();
     let n = run_all_dead(J_DEAD_TELEX, &telex) + run_all_dead(J_DEAD_VNI, &vni);
     assert!(n >= 25, "expected at least 25 dead cases; got {n}");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Known-deviation test: intentionally FAILS while the underlying bugs exist so
-// the report surfaces them. Rename/remove the expected values once fixed.
-// ─────────────────────────────────────────────────────────────────────────────
-
-#[test]
-fn known_deviations_from_standard_orthography() {
-    let telex = DefaultKeyMapping::telex();
-    run_all(DEVIATIONS_TELEX, &telex);
 }

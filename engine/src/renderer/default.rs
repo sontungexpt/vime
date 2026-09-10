@@ -60,18 +60,19 @@ impl DefaultRenderer {
         }
 
         if len == 2 {
-            // oa / oe / uy -> second letter.
+            // oa / oe -> second letter.
             //
             // In these sequences the first vowel represents the
             // medial /w/, while the second vowel is the main vowel.
             if matches!(
                 (vowels[0].value.root(), vowels[1].value.root()),
-                (RootVowel::O, RootVowel::A)
-                    | (RootVowel::O, RootVowel::E)
-                    | (RootVowel::U, RootVowel::Y)
+                (RootVowel::O, RootVowel::A) | (RootVowel::O, RootVowel::E)
             ) {
                 return Some(1);
             }
+
+            // uy -> first letter, the /w/ medial keeps the tone
+            // (thủy, hủy, khuỷ).
 
             // Main vowel written with two letters:
             //
