@@ -1,11 +1,15 @@
 use crate::{
-    Buffer, BufferChar, Config, Input, KeyInterpreter, Renderer, Result, SimpleInterpreter,
+    Buffer, BufferChar, Config, DefaultKeyMapping, Input, KeyMapping, Renderer, Result,
     SimpleRenderer,
 };
 
 const SUFFIX_SPACE: &str = " ";
 
-pub struct Engine<R: Renderer, I: KeyInterpreter> {
+mod api;
+
+pub use api::InputEngine;
+
+pub struct Engine<R: Renderer, I: KeyMapping> {
     config: Config,
     keystrokes: Buffer,
     interpreter: I,
@@ -15,7 +19,7 @@ pub struct Engine<R: Renderer, I: KeyInterpreter> {
 impl<R, I> Engine<R, I>
 where
     R: Renderer,
-    I: KeyInterpreter,
+    I: KeyMapping,
 {
     pub fn config(&self) -> &Config {
         &self.config
@@ -68,7 +72,7 @@ where
     }
 
     fn insert(&mut self, character: char) -> Result {
-        if self.interpreter.is_transform_key(character) {
+        if self.interpreter.is_transform(character) {
             self.keystrokes.insert(BufferChar::Transform(character));
         } else {
             self.keystrokes.insert(BufferChar::Literal(character));
@@ -102,18 +106,48 @@ where
     }
 }
 
-impl Engine<SimpleRenderer, SimpleInterpreter<'static>> {
+impl<R, I> InputEngine for Engine<R, I>
+where
+    R: Renderer,
+    I: KeyMapping,
+{
+    fn input(&mut self, input: Input) -> Result {
+        self.input(input)
+    }
+
+    fn commit(&mut self) -> Result {
+        self.commit()
+    }
+
+    fn reset(&mut self) -> Result {
+        self.reset()
+    }
+
+    fn rendered(&self) -> String {
+        self.rendered()
+    }
+
+    fn keystrokes(&self) -> &Buffer {
+        self.keystrokes()
+    }
+
+    fn config(&self) -> &Config {
+        self.config()
+    }
+}
+
+impl Engine<SimpleRenderer, DefaultKeyMapping<'static>> {
     pub fn new(config: Config) -> Self {
         Self {
             config,
             keystrokes: Buffer::new(),
-            interpreter: SimpleInterpreter::telex(),
+            interpreter: DefaultKeyMapping::telex(),
             renderer: SimpleRenderer::default(),
         }
     }
 }
 
-impl Default for Engine<SimpleRenderer, SimpleInterpreter<'static>> {
+impl Default for Engine<SimpleRenderer, DefaultKeyMapping<'static>> {
     fn default() -> Self {
         Self::new(Config::default())
     }

@@ -21,21 +21,22 @@ mod config;
 mod engine;
 mod input;
 mod interpreter;
-mod renderer;
+pub mod renderer;
 mod result;
 
 pub mod phonology;
 
 pub use buffer::{Buffer, BufferChar};
 pub use config::Config;
-pub use engine::Engine;
+pub use engine::{Engine, InputEngine};
 pub use input::Input;
 pub use interpreter::{
-    InterpreterConfig, KeyContext, KeyInterpreter, ShapeConfig, ShapeFamily, SimpleInterpreter,
-    ToneConfig,
+    DefaultKeyMapping, KeyConfig, KeyMapping, KeyTarget, ShapeMap, ToneMap,
 };
 pub use phonology::{
     decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, RootVowel, Shape, Tone,
 };
-pub use renderer::{Orthography, ParsedSyllable, Renderer, SimpleRenderer};
+pub use renderer::{
+    Orthography, ParsedVowel, Parser, Renderer, SimpleRenderer, Syllable,
+};
 pub use result::Result;

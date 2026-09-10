@@ -1,4 +1,3 @@
-use std::fmt;
 use std::str::FromStr;
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -35,16 +34,16 @@ pub enum Onset {
 }
 
 impl Onset {
-    pub const MAX_ONSET_BYTES: usize = 3;
-    pub const LEN: u8 = 27 as u8;
-    pub const MAX_ID: u8 = Self::LEN - 1;
+    pub const MAX_ONSET_LEN: usize = 3;
+    pub const COUNT: usize = 27 as usize;
+    pub const MAX_ID: usize = Self::COUNT - 1;
 
     /// O(1) lookup from a numeric ID. Returns `Err(())` for out-of-bounds IDs.
     #[inline(always)]
-    pub const fn from_id(id: u8) -> Result<Self, ()> {
+    pub const fn from_id(id: usize) -> Result<Self, ()> {
         // Safety: real discriminants are contiguous from 0 through MAX_ID.
-        if id < Self::LEN {
-            Ok(unsafe { std::mem::transmute::<u8, Self>(id) })
+        if id < Self::COUNT {
+            Ok(unsafe { std::mem::transmute::<u8, Self>(id as u8) })
         } else {
             Err(())
         }
@@ -125,23 +124,6 @@ impl Onset {
             }
             _ => Err(()),
         }
-    }
-
-    const ENCODED_CHARS: &[&str] = &[
-        "", "b", "c", "ch", "d", "đ", "g", "gh", "gi", "h", "k", "kh", "l", "m", "n", "ng", "ngh",
-        "p", "ph", "qu", "r", "s", "t", "th", "tr", "v", "x",
-    ];
-
-    /// Converts the onset to a human-readable string.
-    #[inline(always)]
-    pub const fn as_str(self) -> &'static str {
-        Self::ENCODED_CHARS[self as usize]
-    }
-}
-
-impl fmt::Display for Onset {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.as_str())
     }
 }
 

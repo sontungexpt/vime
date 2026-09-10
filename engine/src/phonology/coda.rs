@@ -1,4 +1,5 @@
 use std::fmt;
+use std::mem::transmute;
 use std::str::FromStr;
 
 /// Syllable Coda (Phụ âm cuối)
@@ -18,31 +19,19 @@ pub enum Coda {
 }
 
 impl Coda {
-    pub const MAX_CODA_BYTES: usize = 2;
-    pub const LEN: usize = 9;
-    pub const MAX_ID: usize = Self::LEN - 1;
+    pub const MAX_CODA_LEN: usize = 2;
+    pub const COUNT: usize = 9;
+    pub const MAX_ID: usize = Self::COUNT - 1;
 
-    /// Normalized string representations corresponding 1-to-1 with enum discriminants.
-    const ENCODED_STRS: [&'static str; Self::LEN] = ["", "c", "ch", "m", "n", "ng", "nh", "p", "t"];
-
-    /// O(1) lookup from a numeric ID. Returns `Err(())` for out-of-bounds IDs.
     #[inline(always)]
     pub const fn from_id(id: usize) -> Result<Self, ()> {
-        match id {
-            0 => Ok(Self::None),
-            1 => Ok(Self::C),
-            2 => Ok(Self::Ch),
-            3 => Ok(Self::M),
-            4 => Ok(Self::N),
-            5 => Ok(Self::Ng),
-            6 => Ok(Self::Nh),
-            7 => Ok(Self::P),
-            8 => Ok(Self::T),
-            _ => Err(()),
+        if id < Self::COUNT {
+            Ok(unsafe { transmute::<u8, Self>(id as u8) })
+        } else {
+            Err(())
         }
     }
 
-    /// O(1) case-insensitive lookup from an ASCII byte slice (fully optimized for `const fn`).
     #[inline(always)]
     pub const fn from_bytes(bytes: &[u8]) -> Result<Self, ()> {
         match bytes {
@@ -83,19 +72,6 @@ impl Coda {
             }
             _ => Err(()),
         }
-    }
-
-    /// Returns the static string representation of the coda.
-    #[inline(always)]
-    pub const fn as_str(self) -> &'static str {
-        Self::ENCODED_STRS[self as usize]
-    }
-}
-
-impl fmt::Display for Coda {
-    #[inline(always)]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
     }
 }
 

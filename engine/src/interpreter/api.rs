@@ -1,21 +1,23 @@
-use crate::phonology::{Shape, Tone};
+use crate::phonology::{BaseVowel, Shape, Tone};
 
-#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
-pub struct KeyContext {
-    pub target: Option<char>,
-}
-
-impl KeyContext {
-    pub fn new(target: Option<char>) -> Self {
-        Self { target }
-    }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum KeyTarget {
+    Char(char),
+    BaseVowel(BaseVowel),
 }
 
 /// Interprets keyboard input into semantic Vietnamese actions.
-pub trait KeyInterpreter {
-    fn is_transform_key(&self, input: char) -> bool;
+pub trait KeyMapping {
+    /// Returns whether `input` is configured as a tone, shape, or stroke key.
+    fn is_transform(&self, input: char) -> bool;
 
-    fn interpret_shape(&self, context: KeyContext, input: char) -> Option<(char, Shape)>;
+    /// Interprets `input` as a tone key, returning the configured [`Tone`].
+    fn tone(&self, input: char) -> Option<Tone>;
 
-    fn interpret_tone(&self, context: KeyContext, input: char) -> Option<(char, Tone)>;
+    /// Interprets `input` as the `d`/`đ` stroke key.
+    fn stroke(&self, input: char) -> bool;
+
+    /// Interprets `input` as a shape key for `target`, returning the
+    /// configured [`Shape`].
+    fn shape(&self, input: char, target: KeyTarget) -> Option<Shape>;
 }

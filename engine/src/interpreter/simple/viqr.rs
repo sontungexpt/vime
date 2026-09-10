@@ -1,69 +1,66 @@
-use super::{InterpreterConfig, ShapeConfig, ShapeFamily, ToneConfig};
+use super::{KeyConfig, ShapeMap, ToneMap};
 use crate::{RootVowel, Shape, Tone};
 
-/// Standard VIQR keyboard mappings.
-pub(crate) const CONFIG: &InterpreterConfig = &InterpreterConfig {
-    tone_keys: &[
-        ToneConfig {
-            key: '\'',
-            tone: Tone::Acute,
-        },
-        ToneConfig {
+/// VIQr layout: shapes on `^` (circumflex), `(` (breve), `+` (horn), `d`
+/// (stroke); tones on `` ` `` `?` `~` `'` `.` and `z`.
+pub(crate) const CONFIG: &KeyConfig = &KeyConfig::new(
+    &[
+        ToneMap {
             key: '`',
             tone: Tone::Grave,
         },
-        ToneConfig {
+        ToneMap {
             key: '?',
             tone: Tone::Hook,
         },
-        ToneConfig {
+        ToneMap {
             key: '~',
             tone: Tone::Tilde,
         },
-        ToneConfig {
+        ToneMap {
+            key: '\'',
+            tone: Tone::Acute,
+        },
+        ToneMap {
             key: '.',
             tone: Tone::Dot,
         },
-        ToneConfig {
+        ToneMap {
             key: 'z',
             tone: Tone::Flat,
         },
     ],
-    shape_keys: &[
-        ShapeConfig {
+    &[
+        ShapeMap {
             key: '^',
-            target: ShapeFamily::Vowel(RootVowel::A),
+            owner: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '^',
-            target: ShapeFamily::Vowel(RootVowel::E),
+            owner: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '^',
-            target: ShapeFamily::Vowel(RootVowel::O),
+            owner: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '(',
-            target: ShapeFamily::Vowel(RootVowel::A),
+            owner: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '+',
-            target: ShapeFamily::Vowel(RootVowel::O),
+            owner: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '+',
-            target: ShapeFamily::Vowel(RootVowel::U),
+            owner: RootVowel::U,
             shape: Shape::Horn,
-        },
-        ShapeConfig {
-            key: 'd',
-            target: ShapeFamily::D,
-            shape: Shape::Stroke,
         },
     ],
-};
+    &['d'],
+);

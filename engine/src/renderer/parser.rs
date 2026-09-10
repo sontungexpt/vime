@@ -1,247 +1,398 @@
 use crate::{
-    interpreter::{KeyContext, KeyInterpreter},
-    phonology::{decode_vowel, is_vowel, BaseVowel, Coda, Onset, Shape, Tone},
+    interpreter::{KeyMapping, KeyTarget},
+    phonology::{
+        decode_vowel, is_vowel,
+        rule::{self, match_vowel_sequence},
+        BaseVowel, Case, Coda, Onset, Shape, Tone,
+    },
     BufferChar,
 };
+use std::str::FromStr;
+
+// Kiểm tra xem ký tự có phải là kí tự phụ âm ascii
+#[inline(always)]
+const fn is_ascii_consonant(c: char) -> bool {
+    matches!(
+        c,
+        'b'..='d' | 'f'..='h' | 'j'..='n' | 'p'..='t' | 'v'..='z' |
+        'B'..='D' | 'F'..='H' | 'J'..='N' | 'P'..='T' | 'V'..='Z' |
+        'đ' | 'Đ'
+    )
+}
+
+#[inline(always)]
+const fn hasD(ch: char) -> bool {
+    matches!(ch, 'd' | 'Đ' | 'D' | 'đ')
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TransformResult {
+    Applied,
+    Undone,
+    NotApplicable,
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct OnsetSegment {
     pub kind: Onset,
-    pub chars: Vec<char>,
+    collected: Vec<char>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct VowelSegment {
-    pub bases: Vec<BaseVowel>,
-    pub chars: Vec<char>,
+impl OnsetSegment {
+    #[inline(always)]
+    pub fn push(&mut self, ch: char) {
+        self.collected.push(ch);
+    }
+
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        self.collected.len()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct CodaSegment {
     pub kind: Coda,
-    pub chars: Vec<char>,
+    pub collected: Vec<char>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParsedVowel {
+    pub base: BaseVowel,
+    pub case: Case,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct ParsedSyllable {
+pub struct Syllable {
     pub onset: OnsetSegment,
-    pub vowels: VowelSegment,
-    pub tone: Tone,
-    // usize là độ dài của chuỗi nguyên âm ngay lúc phát hiện ra tone
-    pub tones: Vec<(Tone, usize)>,
+    pub vowels: Vec<ParsedVowel>,
     pub coda: CodaSegment,
-    pub fallback_transforms: Vec<char>,
+    pub tone: Tone,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParsedResult {
-    /// Phân tích thành công một âm tiết Tiếng Việt chuẩn ngữ pháp
-    Success(ParsedSyllable),
-
-    /// Thành công nhưng chỉ chứa 'd'/'D' hoặc 'đ'/'Đ' + dấu stroke
-    OnlyDAndStroke,
-
-    /// Không phải từ Tiếng Việt hợp lệ, nhưng trả về kết quả parse dở dang
-    /// để Engine có thể fallback/in ra chuỗi thô mà không làm mất ký tự
-    Failure(ParsedSyllable),
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParsePhase {
+    #[default]
+    Onset,
+    Vowel,
+    Coda,
 }
 
-// 1. Constant BitMask R2 (o, u, c, n, m, g, h, p, t)
-const R2_MASK: u32 = {
-    let mut mask = 0u32;
-    let allowed_r2 = [b'o', b'u', b'c', b'n', b'm', b'g', b'h', b'p', b't'];
-    let mut i = 0;
-    while i < allowed_r2.len() {
-        let bit_index = allowed_r2[i] - b'a';
-        mask |= 1 << bit_index;
-        i += 1;
-    }
-    mask
-};
-
-impl ParsedSyllable {
-    /// Xác định index của nguyên âm sẽ mang Dấu Thanh chuẩn Phonology
-    pub fn get_tone_target_index(&self) -> usize {
-        let len = self.vowels.bases.len();
-        if len <= 1 {
-            return 0;
-        }
-
-        // 1. Ưu tiên nguyên âm có Dấu mũ / Dấu móc (ê, ơ, ô, ă, â, ư)
-        for (i, &v) in self.vowels.bases.iter().enumerate() {
-            if !matches!(v.shape(), Shape::None) {
-                return i;
-            }
-        }
-
-        // 2. Quy tắc bỏ dấu Chuẩn (Bộ GD&ĐT)
-        if self.coda.kind != Coda::None {
-            1 // Có phụ âm cuối -> Dấu đặt ở nguyên âm thứ 2
-        } else {
-            0 // Không có phụ âm cuối -> Dấu đặt ở nguyên âm thứ 1
-        }
-    }
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeadReason {
+    #[default]
+    Unknown,
+    InvalidOnset,
+    InvalidVowelSequence,
+    SpecialBurden, // Các kí tự lạ ? , / , \
 }
 
-// =========================================================================
-// 2. PARSER ENGINE (Bộ xử lý bóc tách âm tiết)
-// =========================================================================
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseStatus {
+    #[default]
+    Incomplete,
+    Valid,
+    Dead(DeadReason),
+}
 
-pub struct SyllableParser;
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct Parser<KM: KeyMapping> {
+    syllable: Syllable,
+    phase: ParsePhase,
+    status: ParseStatus,
+    mapping: KM,
+}
 
-impl SyllableParser {
+impl<KM: KeyMapping> Parser<KM> {
     #[inline(always)]
-    const fn is_ascii_consonant(c: char) -> bool {
-        matches!(
-            c,
-            'b'..='d' | 'f'..='h' | 'j'..='n' | 'p'..='t' | 'v'..='z' |
-            'B'..='D' | 'F'..='H' | 'J'..='N' | 'P'..='T' | 'V'..='Z' |
-            'đ' | 'Đ'
-        )
+    const fn kill(&mut self, reason: DeadReason) -> ParseStatus {
+        self.status = ParseStatus::Dead(reason);
+        self.status
     }
 
-    /// Parser chính nhận chuỗi BufferChar và KeyInterpreter để bóc tách âm tiết
-    pub fn parse<I: KeyInterpreter>(chars: &[BufferChar], interpreter: &I) -> ParsedResult {
-        let len = chars.len();
+    #[inline(always)]
+    const fn change_phase(&mut self, phase: ParsePhase) {
+        self.phase = phase;
+    }
 
-        if len == 0 {
-            return ParsedResult::Failure(ParsedSyllable::default());
-        } else if len == 2 {
-            let first_char = chars[0].as_char();
+    #[inline]
+    pub fn push(&mut self, input: BufferChar) -> ParseStatus {
+        if let ParseStatus::Dead(_) = self.status {
+            return self.status;
+        }
 
-            if matches!(first_char, 'd' | 'D' | 'đ' | 'Đ') {
-                if let BufferChar::Transform(modifier_key) = chars[1] {
-                    let context = KeyContext::new(Some(first_char));
-                    if let Some((_, Shape::Stroke)) =
-                        interpreter.interpret_shape(context, modifier_key)
-                    {
-                        return ParsedResult::OnlyDAndStroke;
+        match self.phase {
+            ParsePhase::Onset => self.push_onset(input),
+            ParsePhase::Vowel => self.push_vowel(input),
+            // ParsePhase::Coda => self.push_coda(input),
+            _ => ParseStatus::Incomplete,
+        }
+    }
+
+    #[inline]
+    fn push_onset(&mut self, input: BufferChar) -> ParseStatus {
+        match input {
+            BufferChar::Literal(ch) => self.push_onset_literal(ch),
+            BufferChar::Transform(key) => self.push_onset_transform(key),
+        }
+    }
+
+    #[inline]
+    fn push_onset_literal(&mut self, ch: char) -> ParseStatus {
+        let syllable = &mut self.syllable;
+
+        // Là phụ âm thì cứ thêm vào
+        if is_ascii_consonant(ch) {
+            syllable.onset.push(ch);
+        }
+        // Nếu là nguyên âm
+        else if let Some((base, tone, case)) = decode_vowel(ch) {
+            // qu
+            // Nếu gặp nguyên âm u
+            if base == BaseVowel::U
+                && syllable.onset.len() == 1
+                && syllable.onset.collected[0].to_ascii_lowercase() == 'q'
+            // Chỉ lấy u nếu là ư thì coi như loại
+            {
+                // Coi u là một consonant trong trường hợp này
+                syllable.onset.push(ch);
+                return self.status;
+            }
+
+            // Xử lí nguyên âm đầu tiên gặp
+            //
+            // Không có onset cũng hợp lệ:
+            // "a", "ă", "â", ...
+            if syllable.onset.len() > 0 {
+                match Onset::from_chars(&syllable.onset.collected) {
+                    Ok(kind) => {
+                        syllable.onset.kind = kind;
                     }
-                }
-            }
-        }
-
-        let mut idx = 0;
-        let mut parsed = ParsedSyllable::default();
-
-        let mut raw_coda_chars: Vec<char> = Vec::new();
-
-        // -----------------------------------------------------------------
-        // 1. Quét tìm Onset
-        // -----------------------------------------------------------------
-        let onset_start = idx; // always 0
-
-        while idx < len && Self::is_ascii_consonant(chars[idx].as_char()) {
-            idx += 1;
-            if idx - onset_start > Onset::MAX_ONSET_BYTES as usize {
-                // Onset quá dài, không hợp lệ
-                return ParsedResult::Failure(parsed);
-            }
-        }
-
-        // has as least one consonant
-        if idx > onset_start {
-            // Xử lý đặc biệt cho 'qu' và 'gi'
-            let onset_len = idx - onset_start;
-            if onset_len == 1 {
-                let first = chars[onset_start].as_char().to_ascii_lowercase();
-                let curr = chars[idx].as_char().to_ascii_lowercase();
-
-                // Xử lý 'qu'
-                if first == 'q' && curr == 'u' {
-                    idx += 1;
-                }
-                // Xử lý 'gi' (Ví dụ: "giá" -> onset 'gi', 'a' làm nucleus)
-                else if first == 'g'
-                    && curr == 'i'
-                    && idx + 1 < len
-                    && is_vowel(chars[idx + 1].as_char())
-                {
-                    idx += 1;
+                    Err(_) => return self.kill(DeadReason::InvalidOnset),
                 }
             }
 
-            let raw_onset_chars: Vec<char> = chars[onset_start..idx]
-                .iter()
-                .map(|bc| bc.as_char())
-                .collect();
+            syllable.vowels.push(ParsedVowel { base, case });
+            syllable.tone = tone;
 
-            parsed.onset.kind = Onset::from_chars(&raw_onset_chars).unwrap_or(Onset::None);
-            parsed.onset.chars = raw_onset_chars;
+            self.change_phase(ParsePhase::Vowel);
         }
 
-        // Only onset, no vowels so not a valid vietnamese word
-        if idx >= len {
-            return ParsedResult::Failure(parsed);
+        // Không phải phụ âm cũng không phải nguyên âm túc là các phím rác khác như ?, /
+        self.kill(DeadReason::SpecialBurden)
+    }
+
+    #[inline(always)]
+    fn push_onset_transform(&mut self, key: char) -> ParseStatus {
+        if self.try_d_stroke_transform(key) != TransformResult::Applied {
+            // Không phải stroke transform.
+            return self.push_onset_literal(key);
         }
 
-        // -----------------------------------------------------------------
-        // 2. TÁCH RIÊNG: Xử lý Ký tự đầu tiên sau Onset phải là nguyên âm
-        // -----------------------------------------------------------------
-        let first_vowel = chars[idx].as_char();
-        if !is_vowel(first_vowel) {
-            return ParsedResult::Failure(parsed);
-        } else {
-            parsed.vowels.chars.push(first_vowel);
-            idx += 1;
+        // Đã xử lý stroke transform, trả về trạng thái hiện tại.
+        self.status
+    }
+
+    // #[inline(always)]
+    // fn build_onset(&mut self) -> Result<Onset, ()> {
+    //     if self.syllable.onset.len() == 0 {
+    //         return Ok(Onset::None);
+    //     }
+    //     match Onset::from_chars(&self.syllable.onset.collected) {
+    //         Ok(kind) => {
+    //             self.syllable.onset.kind = kind;
+    //             Ok(kind)
+    //         }
+    //         Err(_) => Err(()),
+    //     }
+    // }
+
+    #[inline(always)]
+    fn try_d_stroke_transform(&mut self, key: char) -> TransformResult {
+        if !self.mapping.stroke(key) {
+            return TransformResult::NotApplicable;
         }
 
-        // -----------------------------------------------------------------
-        // 3. Tìm các nguyên âm
-        // Tại thời điểm này, parsed.vowels BẮT BUỘC đã có ít nhất 1 phần tử
-        // Đồng thời chuỗi nguyên âm phải là một chuỗi liền mạch toàn nguyên âm hoặc là transform key nếu có một kí tự nào không phải là nguyên âm và transform key xen giữa chuỗi nguyên âm thì coi như là chuỗi nguyên âm ko hợp lệ
-        // Ví dụ: "aco" là chuỗi ko hợp lệ,
-        // -----------------------------------------------------------------
-        while idx < len {
-            let b_char = chars[idx];
+        self.update_d_stroke()
+    }
 
-            match b_char {
-                // A. Ký tự thường (Literal)
-                BufferChar::Literal(ch) => {
-                    if is_vowel(ch) {
-                        parsed.vowels.chars.push(ch);
-                    } else {
-                        // Kết thúc chuỗi nguyên âm phần còn lại là coda hoặc các transform key xen kẻ coda
-                        idx += 1;
-                        break;
-                    }
+    // Return true if applied, false if undone or not applicable.
+    #[inline(always)]
+    fn update_d_stroke(&mut self) -> TransformResult {
+        for ch in self.syllable.onset.collected.iter_mut().rev() {
+            match *ch {
+                'd' => {
+                    *ch = 'đ';
+                    return TransformResult::Applied;
                 }
+                'D' => {
+                    *ch = 'Đ';
+                    return TransformResult::Applied;
+                }
+                'đ' => {
+                    *ch = 'd';
+                    return TransformResult::Undone;
+                }
+                'Đ' => {
+                    *ch = 'D';
+                    return TransformResult::Undone;
+                }
+                _ => {}
+            }
+        }
 
-                // B. Phím Transform biến đổi (Dấu thanh / Mũ / Móc)
-                BufferChar::Transform(key) => {
-                    let vowels_len = parsed.vowels.chars.len();
+        TransformResult::NotApplicable
+    }
 
-                    // Tone có thể apply cho tất cả nguyên âm
-                    if let Some((_, tone)) = interpreter.interpret_tone(KeyContext::default(), key)
-                    {
-                        parsed.tones.push((tone, vowels_len));
-                    } else {
-                        // 2. XỬ LÝ DẤU HÌNH DẠNG (Shape - Mũ, Móc)
-                        for vowel_char in parsed.vowels.chars.iter().rev() {
-                            let context = KeyContext::new(Some(*vowel_char));
-                            if let Some((_, shape)) = interpreter.interpret_shape(context, key) {}
-                        }
-                        // Không phải là transform key thì key phải là nguyên âm để tạo thành một chuỗi nguyên âm liên tiếp
-                        if !is_vowel(key) {
-                            idx += 1;
-                            break;
-                        }
+    /// "gi" + nguyên âm nữa -> chuyển 'i' từ chuỗi nguyên âm về onset,
+    /// lúc này "gi" trở thành phụ âm (Onset::Gi).
+    #[inline(always)]
+    fn promote_gi_onset(&mut self) -> bool {
+        let syllable = &mut self.syllable;
 
-                        parsed.vowels.chars.push(key);
-                    }
+        let Some(i) = syllable.vowels.pop() else {
+            return false;
+        };
+
+        syllable
+            .onset
+            .push(if i.case == Case::Lower { 'i' } else { 'I' });
+        syllable.onset.kind = Onset::Gi;
+
+        true
+    }
+
+    #[inline]
+    fn push_vowel(&mut self, input: BufferChar) -> ParseStatus {
+        match input {
+            BufferChar::Literal(ch) => self.push_vowel_literal(ch),
+            BufferChar::Transform(key) => self.push_vowel_transform(key),
+        }
+    }
+    #[inline]
+    fn push_vowel_precomposed(&mut self, base: BaseVowel, tone: Tone, case: Case) -> bool {
+        let syllable = &mut self.syllable;
+
+        // Nếu input là precomposed vowel có tone,
+        // không được tạo conflict với tone hiện tại.
+        // Ví dụ đang có á rồi mà dùng kĩ thuật uinput truyền thẳng một kí tự ắ vào buffer
+        if tone != Tone::Flat && syllable.tone != Tone::Flat {
+            return false; // push failed
+        }
+
+        syllable.vowels.push(ParsedVowel { base, case });
+
+        if tone != Tone::Flat {
+            syllable.tone = tone;
+        }
+
+        true // push succeeded
+    }
+
+    #[inline]
+    fn push_vowel_literal(&mut self, ch: char) -> ParseStatus {
+        if let Some((base, tone, case)) = decode_vowel(ch) {
+            // ---------------------------------------------------------
+            // Special case: g + i
+            //
+            // "gi" chưa thể quyết định:
+            //
+            //   g | i
+            //   gi | ...
+            //
+            // ---------------------------------------------------------
+            if self.syllable.onset.kind == Onset::G && self.syllable.vowels[0].base == BaseVowel::I
+            {
+                // Phía trước là gi rồi và theo sau là một nguyên âm nữa thì lúc này gi sẽ thành phụ âm
+                if !self.promote_gi_onset() {
+                    // Không bao giờ failed
+                    return self.kill(DeadReason::Unknown);
                 }
             }
-            idx += 1;
-        }
 
-        while idx < len {
-            if raw_coda_chars.len() > 2 {
-                return ParsedResult::Failure(parsed);
+            // Thêm nguyên âm mới vào chuỗi nguyên âm
+            if !self.push_vowel_precomposed(base, tone, case) {
+                return self.kill(DeadReason::InvalidVowelSequence);
             }
-            raw_coda_chars.push(chars[idx].as_char());
-            idx += 1;
         }
 
-        ParsedResult::Success(parsed)
+        // ---------------------------------------------------------
+        // Không phải vowel.
+        //
+        // Đây là coda → chuyển phase.
+        // ---------------------------------------------------------
+        if !is_ascii_consonant(ch) {
+            return self.kill(DeadReason::SpecialBurden);
+        }
+
+        self.syllable.coda.collected.push(ch);
+        self.change_phase(ParsePhase::Coda);
+        self.status
+    }
+
+    #[inline]
+    fn push_vowel_transform(&mut self, key: char) -> ParseStatus {
+        // ---------------------------------------------------------
+        // 1. Tone
+        // ---------------------------------------------------------
+        if let Some(tone) = self.mapping.tone(key) {
+            // Applied ko được hoặc undo thì coi key như một vowel literal mới
+            if self.update_tone(tone) != TransformResult::Applied {
+                return self.push_vowel_literal(key);
+            }
+        }
+
+        match self.try_d_stroke_transform(key) {
+            TransformResult::Applied => {
+                // Đã Chuyển đổi thành d-stroke
+                return self.status;
+            }
+            TransformResult::Undone => {
+                // Undo lại thành kí tự kết thúc phase sang phase coda
+                self.syllable.coda.collected.push(key);
+                self.change_phase(ParsePhase::Coda);
+                return self.status;
+            }
+            TransformResult::NotApplicable => {}
+        }
+
+        // ---------------------------------------------------------
+        // 2. Shape
+        //
+        // Tìm vowel gần nhất có thể nhận shape.
+        // ---------------------------------------------------------
+        for index in (0..self.syllable.vowels.len()).rev() {
+            let base = self.syllable.vowels[index].base;
+
+            let Some(shape) = self.mapping.shape(key, KeyTarget::BaseVowel(base)) else {
+                continue;
+            };
+
+            if self.apply_vowel_shape(index, shape) {
+                return self.update_vowel_status();
+            }
+        }
+
+        // Không phải transform hợp lệ cho vowel.
+        self.kill(DeadReason::Unknown)
+    }
+
+    #[inline(always)]
+    fn update_tone(&mut self, tone: Tone) -> TransformResult {
+        let syllable = &mut self.syllable;
+
+        if syllable.vowels.is_empty() {
+            return TransformResult::NotApplicable;
+        }
+
+        // Cùng tone → toggle về Flat.
+        if syllable.tone == tone {
+            syllable.tone = Tone::Flat;
+            return TransformResult::Undone;
+        }
+
+        // Khác tone → thay tone hiện tại.
+        syllable.tone = tone;
+        TransformResult::Applied
     }
 }

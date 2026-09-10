@@ -1,5 +1,3 @@
-//! Vietnamese phonology: the vowel codec plus onset and coda inventories.
-
 pub mod coda;
 pub mod config;
 pub mod onset;

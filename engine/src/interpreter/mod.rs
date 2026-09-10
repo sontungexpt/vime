@@ -1,5 +1,5 @@
 mod api;
 mod simple;
 
-pub use api::{KeyContext, KeyInterpreter};
-pub use simple::{InterpreterConfig, ShapeConfig, ShapeFamily, SimpleInterpreter, ToneConfig};
+pub use api::{KeyMapping, KeyTarget};
+pub use simple::{DefaultKeyMapping, KeyConfig, ShapeMap, ToneMap};

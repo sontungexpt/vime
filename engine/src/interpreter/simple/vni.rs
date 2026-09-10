@@ -1,68 +1,66 @@
-use super::{InterpreterConfig, ShapeConfig, ShapeFamily, ToneConfig};
+use super::{KeyConfig, ShapeMap, ToneMap};
 use crate::{RootVowel, Shape, Tone};
 
-pub(crate) const CONFIG: &InterpreterConfig = &InterpreterConfig {
-    tone_keys: &[
-        ToneConfig {
+/// VNI layout: shapes on `6` (circumflex), `7` (breve/horn), `8` (horn),
+/// `9` (stroke); tones on `1-5` and `0`.
+pub(crate) const CONFIG: &KeyConfig = &KeyConfig::new(
+    &[
+        ToneMap {
             key: '1',
             tone: Tone::Acute,
         },
-        ToneConfig {
+        ToneMap {
             key: '2',
             tone: Tone::Grave,
         },
-        ToneConfig {
+        ToneMap {
             key: '3',
             tone: Tone::Hook,
         },
-        ToneConfig {
+        ToneMap {
             key: '4',
             tone: Tone::Tilde,
         },
-        ToneConfig {
+        ToneMap {
             key: '5',
             tone: Tone::Dot,
         },
-        ToneConfig {
+        ToneMap {
             key: '0',
             tone: Tone::Flat,
         },
     ],
-    shape_keys: &[
-        ShapeConfig {
+    &[
+        ShapeMap {
             key: '6',
-            target: ShapeFamily::Vowel(RootVowel::A),
+            owner: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '7',
-            target: ShapeFamily::Vowel(RootVowel::A),
+            owner: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '6',
-            target: ShapeFamily::Vowel(RootVowel::E),
+            owner: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '6',
-            target: ShapeFamily::Vowel(RootVowel::O),
+            owner: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '7',
-            target: ShapeFamily::Vowel(RootVowel::O),
+            owner: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeConfig {
+        ShapeMap {
             key: '8',
-            target: ShapeFamily::Vowel(RootVowel::U),
+            owner: RootVowel::U,
             shape: Shape::Horn,
-        },
-        ShapeConfig {
-            key: '9',
-            target: ShapeFamily::D,
-            shape: Shape::Stroke,
         },
     ],
-};
+    &['9'],
+);

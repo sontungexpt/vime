@@ -3,6 +3,7 @@ use std::fmt::{self, Write};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BufferChar {
     Literal(char),
+    // char in transform is always a ascii char
     Transform(char),
 }
 
@@ -17,14 +18,6 @@ impl BufferChar {
     #[inline(always)]
     pub const fn is_transform(&self) -> bool {
         matches!(self, BufferChar::Transform(_))
-    }
-
-    #[inline(always)]
-    pub const fn as_transform(&self) -> Option<char> {
-        match self {
-            BufferChar::Transform(c) => Some(*c),
-            _ => None,
-        }
     }
 }
 
