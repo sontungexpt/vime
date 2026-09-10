@@ -35,15 +35,3 @@ impl Default for Syllable {
         }
     }
 }
-
-impl Syllable {
-    #[inline(always)]
-    pub(super) fn vowel_bases(&self) -> (usize, [BaseVowel; 3]) {
-        debug_assert!(self.vowels.len() <= 3);
-        let mut buf = [BaseVowel::A; 3];
-        for (i, v) in self.vowels.iter().enumerate() {
-            buf[i] = v.value;
-        }
-        (self.vowels.len(), buf)
-    }
-}

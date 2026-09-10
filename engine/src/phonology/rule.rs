@@ -1,16 +1,16 @@
 use super::vowel::BaseVowel;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SequenceStatus {
+pub enum NucleusStatus {
     Dead,
     Valid,
     InComplete,
 }
 
 #[inline]
-pub const fn check_vowel_sequence(vowels: &[BaseVowel]) -> SequenceStatus {
+pub const fn check_nucleus_validity(vowels: &[BaseVowel]) -> NucleusStatus {
     use BaseVowel::*;
-    use SequenceStatus::*;
+    use NucleusStatus::*;
 
     match vowels {
         // ─────────────────── Single vowels ───────────────────

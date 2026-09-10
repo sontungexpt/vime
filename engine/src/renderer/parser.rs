@@ -2,7 +2,7 @@ use crate::{
     interpreter::{KeyMapping, KeyTarget},
     phonology::{
         decode_vowel,
-        rule::{self, check_vowel_sequence, SequenceStatus},
+        rule::{self, check_nucleus_validity, NucleusStatus},
         BaseVowel, Case, Coda, Onset, Shape, Tone,
     },
     BufferChar, RootVowel,
@@ -300,11 +300,8 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         // Kiểm tra chuỗi nguyên âm hiện tại có chết chưa có khả thi để pass tiếp ko.
         // Nếu ko valid, coi như dead vì ko thể tạo được nữa do đã kết hợp với coda rồi
         // Ví dụ 'chơa' + 'c' -> 'chơac' (coda invalid)
-        {
-            let (len, bases) = self.syllable.vowel_bases();
-            if SequenceStatus::Dead == check_vowel_sequence(&bases[..len]) {
-                return self.kill(DeadReason::InvalidVowelSequence);
-            }
+        if NucleusStatus::Dead == self.validate_nucleus::<3>() {
+            return self.kill(DeadReason::InvalidVowelSequence);
         }
 
         // Hàm này tự xử lí check len rồi
@@ -619,6 +616,20 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
 
         TransformEffect::NotApplicable
     }
+
+    #[inline(always)]
+    fn validate_nucleus<const N: usize>(&self) -> NucleusStatus {
+        let mut buf = [BaseVowel::A; N]; // Mảng cố định N trên Stack (sửa lỗi mảng động)
+        let len = self.syllable.vowels.len().min(N);
+
+        for (i, v) in self.syllable.vowels.iter().take(len).enumerate() {
+            buf[i] = v.value;
+        }
+
+        // Cắt slice chính xác theo độ dài thực tế và kiểm tra
+        check_nucleus_validity(&buf[..len])
+    }
+
     #[inline]
     fn try_vowel_shape(&mut self, index: usize, shape: Shape) -> TransformEffect {
         let old = self.syllable.vowels[index].value;
@@ -649,12 +660,10 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             return TransformEffect::Applied;
         }
 
-        let (len, bases) = self.syllable.vowel_bases();
-
-        match check_vowel_sequence(&bases[..len]) {
-            rule::SequenceStatus::Valid => TransformEffect::Applied,
-            rule::SequenceStatus::InComplete => TransformEffect::Applied,
-            rule::SequenceStatus::Dead => {
+        match self.validate_nucleus::<3>() {
+            rule::NucleusStatus::Valid => TransformEffect::Applied,
+            rule::NucleusStatus::InComplete => TransformEffect::Applied,
+            rule::NucleusStatus::Dead => {
                 self.syllable.vowels[index].value = old;
                 TransformEffect::NotApplicable
             }
