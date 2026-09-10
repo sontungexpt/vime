@@ -1,4 +1,3 @@
-use std::fmt;
 use std::mem::transmute;
 use std::str::FromStr;
 

@@ -8,71 +8,85 @@ pub enum SequenceStatus {
 }
 
 #[inline]
-pub const fn match_vowel_sequence(vowels: &[BaseVowel]) -> SequenceStatus {
+pub const fn check_vowel_sequence(vowels: &[BaseVowel]) -> SequenceStatus {
     use BaseVowel::*;
     use SequenceStatus::*;
 
     match vowels {
-        // ─────────────────── a ───────────────────
-        [A, I] | [A, O] | [A, U] | [A, Y] | [ACircumflex, U] | [ACircumflex, Y] => Valid,
-
-        // ─────────────────── i ───────────────────
-        [I, A] => Valid,
-        [I, E] => InComplete,
-        [I, ECircumflex] => Valid,
-
-        [I, ECircumflex, U] => Valid,
-
-        // ─────────────────── y ───────────────────
-        [Y, E] => InComplete,
-        [Y, ECircumflex] => Valid,
-
-        [Y, E, U] => InComplete,
-        [Y, ECircumflex, U] => Valid,
-
-        // ─────────────────── e ───────────────────
-        [E, O] | [E, U] => Valid,
-
-        // ─────────────────── o ───────────────────
-        [O, A] | [O, E] => Valid,
-
-        [O, A, I] | [O, A, O] => Valid,
-
-        // ─────────────────── u ───────────────────
-        [U, A] => Valid,
-        [U, O] => InComplete,
-        [U, OHorn] => Valid,
-        [U, OCircumflex] => Valid,
-
-        [U, Y] => Valid,
-        [U, Y, E] => InComplete,
-        [U, Y, ECircumflex] => Valid,
-
-        [U, O, I] => InComplete,
-        [U, OCircumflex, I] => Valid,
-
-        // ─────────────────── ư ───────────────────
-        [UHorn, A] => Valid,
-        [UHorn, O] => InComplete,
-        [UHorn, OHorn] => Valid,
-
-        [UHorn, I] | [UHorn, U] => Valid,
-
-        [UHorn, OHorn, I] | [UHorn, OHorn, U] => Valid,
-
         // ─────────────────── Single vowels ───────────────────
-        [A]
-        | [ABreve]
-        | [ACircumflex]
-        | [E]
-        | [ECircumflex]
-        | [I]
-        | [O]
-        | [OCircumflex]
-        | [OHorn]
-        | [U]
-        | [UHorn]
-        | [Y] => Valid,
+        [A] => Valid,           // a
+        [ABreve] => Valid,      // ă
+        [ACircumflex] => Valid, // â
+
+        [E] => Valid,           // e
+        [ECircumflex] => Valid, // ê
+
+        [I] => Valid, // i
+        [Y] => Valid, // y
+
+        [O] => Valid,           // o
+        [OCircumflex] => Valid, // ô
+        [OHorn] => Valid,       // ơ
+
+        [U] => Valid,     // u
+        [UHorn] => Valid, // ư
+
+        // ─────────────────── a family ───────────────────
+        [A, I] => Valid,           // ai
+        [A, O] => Valid,           // ao
+        [A, U] => Valid,           // au
+        [A, Y] => Valid,           // ay
+        [ACircumflex, U] => Valid, // âu
+        [ACircumflex, Y] => Valid, // ây
+
+        // ─────────────────── i / y family ───────────────────
+        [I, A] => Valid,              // ia
+        [I, E] => InComplete,         // ie
+        [I, ECircumflex] => Valid,    // iê
+        [I, ECircumflex, U] => Valid, // iêu
+
+        [Y, E] => InComplete,         // ye
+        [Y, ECircumflex] => Valid,    // yê
+        [Y, E, U] => InComplete,      // yeu
+        [Y, ECircumflex, U] => Valid, // yêu
+
+        // ─────────────────── e family ───────────────────
+        [E, O] => Valid, // eo
+        [E, U] => Valid, // eu
+
+        // ─────────────────── o family ───────────────────
+        [O, A] => Valid,    // oa
+        [O, A, I] => Valid, // oai
+        [O, A, O] => Valid, // oao
+        [O, E] => Valid,    // oe
+
+        // ─────────────────── u + y family ───────────────────
+        [U, Y] => Valid,              // uy
+        [U, Y, E] => InComplete,      // uye
+        [U, Y, ECircumflex] => Valid, // uyê
+
+        // ─────────────────── u + a family ───────────────────
+        [U, A] => Valid, // ua
+
+        // ─────────────────── u + o transactional family ───────────────────
+        [U, O] => InComplete,      // uo
+        [U, OHorn] => Valid,       // uơ
+        [U, OCircumflex] => Valid, // uô
+
+        [U, O, I] => InComplete,      // uoi
+        [U, OCircumflex, I] => Valid, // uôi
+
+        // ─────────────────── ư + o transactional family ───────────────────
+        [UHorn, O] => InComplete, // ưo
+        [UHorn, OHorn] => Valid,  // ươ
+
+        [UHorn, OHorn, I] => Valid, // ươi
+        [UHorn, OHorn, U] => Valid, // ươu
+
+        // ─────────────────── ư family ───────────────────
+        [UHorn, A] => Valid, // ưa
+        [UHorn, I] => Valid, // ưi
+        [UHorn, U] => Valid, // ưu
 
         // ─────────────────── Invalid ───────────────────
         _ => Dead,

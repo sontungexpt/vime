@@ -1,6 +1,6 @@
 use crate::{
-    Buffer, BufferChar, Config, DefaultKeyMapping, Input, KeyMapping, Renderer, Result,
-    SimpleRenderer,
+    renderer::parser::ParseStatus, Buffer, BufferChar, Config, DefaultKeyMapping, DefaultRenderer,
+    Input, KeyMapping, Parser, Renderer, Result,
 };
 
 const SUFFIX_SPACE: &str = " ";
@@ -12,14 +12,14 @@ pub use api::InputEngine;
 pub struct Engine<R: Renderer, I: KeyMapping> {
     config: Config,
     keystrokes: Buffer,
-    interpreter: I,
+    mapping: I,
     renderer: R,
 }
 
 impl<R, I> Engine<R, I>
 where
     R: Renderer,
-    I: KeyMapping,
+    I: KeyMapping + Clone,
 {
     pub fn config(&self) -> &Config {
         &self.config
@@ -30,13 +30,14 @@ where
     }
 
     pub fn rendered(&self) -> String {
-        let raw: Vec<char> = self
-            .keystrokes
-            .chars()
-            .iter()
-            .map(BufferChar::as_char)
-            .collect();
-        self.renderer.render(&raw, self.keystrokes.cursor())
+        let mut parser = Parser::new(&self.mapping);
+        parser.parse(self.keystrokes.chars());
+
+        if let ParseStatus::Dead(_) = parser.status() {
+            return self.keystrokes.to_string();
+        }
+
+        self.renderer.render(parser.syllable())
     }
 
     pub fn reset(&mut self) -> Result {
@@ -72,7 +73,7 @@ where
     }
 
     fn insert(&mut self, character: char) -> Result {
-        if self.interpreter.is_transform(character) {
+        if self.mapping.is_transform(character) {
             self.keystrokes.insert(BufferChar::Transform(character));
         } else {
             self.keystrokes.insert(BufferChar::Literal(character));
@@ -109,7 +110,7 @@ where
 impl<R, I> InputEngine for Engine<R, I>
 where
     R: Renderer,
-    I: KeyMapping,
+    I: KeyMapping + Clone,
 {
     fn input(&mut self, input: Input) -> Result {
         self.input(input)
@@ -136,18 +137,18 @@ where
     }
 }
 
-impl Engine<SimpleRenderer, DefaultKeyMapping<'static>> {
+impl Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
     pub fn new(config: Config) -> Self {
         Self {
             config,
             keystrokes: Buffer::new(),
-            interpreter: DefaultKeyMapping::telex(),
-            renderer: SimpleRenderer::default(),
+            mapping: DefaultKeyMapping::telex(),
+            renderer: DefaultRenderer::default(),
         }
     }
 }
 
-impl Default for Engine<SimpleRenderer, DefaultKeyMapping<'static>> {
+impl Default for Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
     fn default() -> Self {
         Self::new(Config::default())
     }

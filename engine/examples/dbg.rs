@@ -6,7 +6,7 @@ fn main() {
     }
     println!(
         "raw={} rendered={}",
-        engine.buffer().raw(),
+        engine.keystrokes().to_string(),
         engine.rendered()
     );
     // replicate telex oo case too
@@ -14,5 +14,9 @@ fn main() {
     for ch in "oo".chars() {
         e2.input(Input::Character(ch));
     }
-    println!("oo raw={} rendered={}", e2.buffer().raw(), e2.rendered());
+    println!(
+        "oo raw={} rendered={}",
+        e2.keystrokes().to_string(),
+        e2.rendered()
+    );
 }

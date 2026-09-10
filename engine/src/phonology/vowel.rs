@@ -62,7 +62,7 @@ pub enum Case {
 #[repr(u16)]
 pub enum BaseVowel {
     // Priority 0..=1: highest placement priority (ơ, ê)
-    OHorn = (Shape::Horn as u16) << 3 | RootVowel::O as u16,
+    OHorn = (0 << 5) | (Shape::Horn as u16) << 3 | RootVowel::O as u16,
     ECircumflex = (1 << 5) | (Shape::Circumflex as u16) << 3 | RootVowel::E as u16,
 
     // Priority 2..=5: vowels with diacritics (ă, ô, â, ư)
@@ -190,6 +190,12 @@ impl BaseVowel {
         unsafe { std::mem::transmute(raw) }
     }
 
+    /// Returns `true` when this vowel has no structural shape.
+    #[inline(always)]
+    pub const fn is_no_shape(self) -> bool {
+        (self as u16) >= (BaseVowel::A as u16)
+    }
+
     /// Returns the [`RootVowel`] component of this vowel.
     #[inline(always)]
     pub const fn root(self) -> RootVowel {
@@ -209,9 +215,7 @@ impl BaseVowel {
     /// Returns the vowel with the shape removed (shape becomes [`Shape::None`]).
     #[inline(always)]
     pub const fn without_shape(self) -> Self {
-        let shape_mask = ((1 << Self::SHAPE_BITS) - 1) << Self::SHAPE_SHIFT;
-        let raw = self as u16 & !shape_mask;
-        unsafe { std::mem::transmute(raw) }
+        Self::from_root(self.root())
     }
 }
 
@@ -651,12 +655,7 @@ mod tests {
     fn bitwise_shape_ops_agree_with_from_parts() {
         for id in 0..BaseVowel::COUNT {
             let base = BaseVowel::from_id(id as usize).unwrap();
-            for shape in [
-                Shape::None,
-                Shape::Circumflex,
-                Shape::Breve,
-                Shape::Horn,
-            ] {
+            for shape in [Shape::None, Shape::Circumflex, Shape::Breve, Shape::Horn] {
                 assert_eq!(
                     base.replace_shape(shape),
                     BaseVowel::from_parts(base.root(), shape),
@@ -772,6 +771,19 @@ mod tests {
         for code in 0..=0x10FFFF {
             if let Some(ch) = char::from_u32(code) {
                 let _ = is_vowel(ch);
+            }
+        }
+    }
+
+    #[test]
+    fn shaped_vowels_are_before_unshaped_vowels() {
+        for id in 0..BaseVowel::COUNT {
+            let vowel = BaseVowel::from_id(id as usize).unwrap();
+
+            if vowel.shape() == Shape::None {
+                assert!(vowel.id() >= BaseVowel::A.id());
+            } else {
+                assert!(vowel.id() < BaseVowel::A.id());
             }
         }
     }
