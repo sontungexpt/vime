@@ -65,7 +65,7 @@ impl DefaultRenderer {
             // In these sequences the first vowel represents the
             // medial /w/, while the second vowel is the main vowel.
             if matches!(
-                (vowels[1].value.root(), vowels[0].value.root()),
+                (vowels[0].value.root(), vowels[1].value.root()),
                 (RootVowel::O, RootVowel::A)
                     | (RootVowel::O, RootVowel::E)
                     | (RootVowel::U, RootVowel::Y)

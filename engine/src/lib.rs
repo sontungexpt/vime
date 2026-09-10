@@ -8,7 +8,7 @@
 //!
 //! - [`character`]: semantic Vietnamese vowels as primitive `(base, tone, case)`
 //!   triples and the [`decode`]/[`encode`] codec over precomposed characters.
-//! - [`Interpreter`]: turns a key plus [`interpreter::KeyContext`] into
+//! - [`Interpreter`]: turns a key plus [`keymapping::KeyContext`] into
 //!   shape or tone changes, per input-method configuration
 //!   (`SimpleInterpreter`).
 //! - [`Processor`]: Vietnamese rules; applies actions to semantic vowels,
@@ -20,7 +20,7 @@ mod buffer;
 mod config;
 mod engine;
 mod input;
-mod interpreter;
+mod keymapping;
 pub mod renderer;
 mod result;
 
@@ -30,7 +30,7 @@ pub use buffer::{Buffer, BufferChar};
 pub use config::Config;
 pub use engine::{Engine, InputEngine};
 pub use input::Input;
-pub use interpreter::{DefaultKeyMapping, KeyConfig, KeyMapping, KeyTarget, ShapeMap, ToneMap};
+pub use keymapping::{DefaultKeyMapping, KeyConfig, KeyMapping, KeyTarget, ShapeMap, ToneMap};
 pub use phonology::{
     decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, RootVowel, Shape, Tone,
 };

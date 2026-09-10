@@ -1,5 +1,5 @@
 use crate::{
-    interpreter::{KeyMapping, KeyTarget},
+    keymapping::{KeyMapping, KeyTarget},
     phonology::{
         decode_vowel,
         rule::{self, check_nucleus_validity, NucleusStatus},
@@ -53,6 +53,13 @@ pub enum ParseStatus {
     Dead(DeadReason),
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct ParseSnapshot {
+    phase: ParsePhase,
+    syllable: Syllable,
+    status: ParseStatus,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser<'a, KM: KeyMapping> {
     syllable: Syllable,
@@ -69,6 +76,15 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             phase: ParsePhase::Onset,
             status: ParseStatus::Incomplete,
             mapping,
+        }
+    }
+
+    #[inline(always)]
+    pub fn snapshot(&self) -> ParseSnapshot {
+        ParseSnapshot {
+            phase: self.phase,
+            syllable: self.syllable.clone(),
+            status: self.status,
         }
     }
 

@@ -1,5 +1,5 @@
 use super::*;
-use crate::interpreter::DefaultKeyMapping;
+use crate::keymapping::DefaultKeyMapping;
 
 static TELEX: DefaultKeyMapping<'static> = DefaultKeyMapping::telex();
 
