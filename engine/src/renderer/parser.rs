@@ -35,6 +35,27 @@ enum TransformEffect {
     NotApplicable,
 }
 
+enum InputChar {
+    Vowel {
+        raw: char,
+        base: BaseVowel,
+        tone: Tone,
+        case: Case,
+    },
+    Consonant(char),
+    Other(char),
+}
+
+impl InputChar {
+    pub fn raw(&self) -> char {
+        match self {
+            InputChar::Vowel { raw, .. } => *raw,
+            InputChar::Consonant(c) => *c,
+            InputChar::Other(c) => *c,
+        }
+    }
+}
+
 /// The parsing phase the syllable is currently in.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParsePhase {
@@ -160,6 +181,37 @@ impl<KM: KeyMapping> Parser<KM> {
         self.phase = phase;
     }
 
+    // #[inline(always)]
+    // fn classify_onset(&self, input: char) -> InputChar {
+    //     if is_ascii_consonant(input) {
+    //         return InputChar::Consonant(input);
+    //     }
+
+    //     self.classify_non_consonant(input)
+    // }
+
+    // #[inline(always)]
+    // fn classify_vowel(&self, input: char) -> InputChar {
+    //     if let Some(vowel) = decode_vowel(input) {
+    //         return InputChar::Vowel {
+    //             base: vowel.0,
+    //             tone: vowel.1,
+    //             case: vowel.2,
+    //         };
+    //     }
+
+    //     self.classify_non_vowel(input)
+    // }
+
+    // #[inline(always)]
+    // fn classify_coda(&self, input: char) -> InputChar {
+    //     if is_ascii_consonant(input) {
+    //         return InputChar::Consonant(input);
+    //     }
+
+    //     self.classify_non_consonant(input)
+    // }
+
     /// Pushes one input buffer character and returns the new status.
     ///
     /// No character is consumed once the syllable is dead.
@@ -198,69 +250,87 @@ impl<KM: KeyMapping> Parser<KM> {
     /// Routes an input character to the onset literal / transform handlers.
     #[inline]
     fn push_onset(&mut self, input: char) -> ParseStatus {
+        let input_char = if is_ascii_consonant(input) {
+            InputChar::Consonant(input)
+        } else if let Some((base, tone, case)) = decode_vowel(input) {
+            InputChar::Vowel {
+                raw: input,
+                base,
+                tone,
+                case,
+            }
+        } else {
+            InputChar::Other(input)
+        };
+
         if self.mapping.is_transform(input) {
-            return self.push_onset_transform(input);
+            return self.push_onset_transform(input_char);
         }
-        self.push_onset_literal(input)
+        self.push_onset_literal(input_char)
     }
 
     /// Handles a literal character while in the `Onset` phase.
     ///
     /// Consonants extend the onset. The first vowel opens the nucleus,
     /// treating a `u` after a lone `q` as the `qu` onset.
-    fn push_onset_literal(&mut self, ch: char) -> ParseStatus {
+    fn push_onset_literal(&mut self, input: InputChar) -> ParseStatus {
         let syllable = &mut self.syllable;
 
-        // Any ASCII consonant is appended to the onset.
-        if is_ascii_consonant(ch) {
-            syllable.onset_chars.push(ch);
-            return self.status;
-        }
-        // Otherwise, if it is a vowel
-        else if let Some((base, tone, case)) = decode_vowel(ch) {
-            // qu
-            // A `u` following a lone `q` is kept as the onset of `qu`.
-            // Only the plain `u` counts here: a precomposed `ư` is a vowel.
-            if base == BaseVowel::U
-                && syllable.onset_chars.len() == 1
-                && syllable.onset_chars[0].to_ascii_lowercase() == 'q'
-            {
-                // Treat `u` as an onset consonant in this special case.
+        match input {
+            InputChar::Consonant(ch) => {
                 syllable.onset_chars.push(ch);
                 return self.status;
             }
-
-            // Handle the first vowel encountered.
-            //
-            // A zero onset is also valid: "a", "ă", "â", ...
-            if syllable.onset_chars.len() > 0 {
-                match Onset::from_chars(&syllable.onset_chars) {
-                    Ok(kind) => {
-                        syllable.onset = Some(kind);
-                    }
-                    Err(_) => return self.kill(DeadReason::InvalidOnset),
+            InputChar::Vowel {
+                raw,
+                base,
+                tone,
+                case,
+            } => {
+                // qu
+                // A `u` following a lone `q` is kept as the onset of `qu`.
+                // Only the plain `u` counts here: a precomposed `ư` is a vowel.
+                if base == BaseVowel::U
+                    && syllable.onset_chars.len() == 1
+                    && syllable.onset_chars[0].to_ascii_lowercase() == 'q'
+                {
+                    // Treat `u` as an onset consonant in this special case.
+                    syllable.onset_chars.push(raw);
+                    return self.status;
                 }
+
+                // Handle the first vowel encountered.
+                //
+                // A zero onset is also valid: "a", "ă", "â", ...
+                if syllable.onset_chars.len() > 0 {
+                    // Lazy build onset and validate onset
+                    match Onset::from_chars(&syllable.onset_chars) {
+                        Ok(kind) => {
+                            syllable.onset = Some(kind);
+                        }
+                        Err(_) => return self.kill(DeadReason::InvalidOnset),
+                    }
+                }
+
+                self.set_phase(ParsePhase::Vowel);
+                self.push_vowel_literal(input);
+                return self.status;
             }
-
-            syllable.vowels.push(Cased { value: base, case });
-            syllable.tone = tone;
-
-            self.set_phase(ParsePhase::Vowel);
-            return self.status;
+            InputChar::Other(_) => {
+                // Neither a consonant nor a vowel: stray keys such as `?` or `/`.
+                self.kill(DeadReason::InvalidCharacter)
+            }
         }
-
-        // Neither a consonant nor a vowel: stray keys such as `?` or `/`.
-        self.kill(DeadReason::InvalidCharacter)
     }
 
     /// Handles a transform key while in the `Onset` phase.
     ///
     /// Only the D-stroke is meaningful here; every other key is treated as a
     /// literal. A revert undoes the stroke and then falls back to a literal.
-    fn push_onset_transform(&mut self, key: char) -> ParseStatus {
+    fn push_onset_transform(&mut self, input: InputChar) -> ParseStatus {
         // Any key that is not a stroke key is treated as an ordinary letter.
-        if !self.mapping.stroke(key) {
-            return self.push_onset_literal(key);
+        if !self.mapping.stroke(input.raw()) {
+            return self.push_onset_literal(input);
         }
 
         match self.try_d_stroke() {
@@ -270,10 +340,10 @@ impl<KM: KeyMapping> Parser<KM> {
             TransformEffect::Reverted => {
                 // The stroke was undone, so the key falls back to a literal.
                 // e.g. toggling 'đ' back to 'd' and adding the key gives "dd".
-                return self.push_onset_literal(key);
+                return self.push_onset_literal(input);
             }
             TransformEffect::NotApplicable => {
-                return self.push_onset_literal(key);
+                return self.push_onset_literal(input);
             }
         }
     }
@@ -299,10 +369,23 @@ impl<KM: KeyMapping> Parser<KM> {
     /// Routes an input character to the vowel literal / transform handlers.
     #[inline]
     fn push_vowel(&mut self, input: char) -> ParseStatus {
+        let input_char = if let Some((base, tone, case)) = decode_vowel(input) {
+            InputChar::Vowel {
+                raw: input,
+                base,
+                tone,
+                case,
+            }
+        } else if is_ascii_consonant(input) {
+            InputChar::Consonant(input)
+        } else {
+            InputChar::Other(input)
+        };
+
         if self.mapping.is_transform(input) {
-            return self.push_vowel_transform(input);
+            return self.push_vowel_transform(input_char);
         }
-        self.push_vowel_literal(input)
+        self.push_vowel_literal(input_char)
     }
 
     /// Appends a precomposed vowel to the nucleus if it does not clash with
@@ -331,69 +414,81 @@ impl<KM: KeyMapping> Parser<KM> {
     ///
     /// A vowel is added to the nucleus; a consonant closes the nucleus and
     /// moves on to the `Coda` phase.
-    fn push_vowel_literal(&mut self, ch: char) -> ParseStatus {
-        if let Some((base, tone, case)) = decode_vowel(ch) {
-            // ---------------------------------------------------------
-            // Special case: gi
-            // A syllable prefix of "gi" is ambiguous: if another vowel
-            // follows the 'i', "gi" becomes the onset; otherwise 'g'
-            // stays the onset and the 'i' is the nucleus.
-            // ---------------------------------------------------------
-            if self.syllable.onset == Some(Onset::G)
-                // Only 'i' is in the vowel sequence so far
-                && self.syllable.vowels[0].value == BaseVowel::I
-                && self.syllable.vowels.len() == 1
-            {
-                // "gi" is already typed and another vowel follows,
-                // so "gi" now becomes the onset.
-                if !self.resolve_gi_onset() {
-                    // Unreachable in practice
-                    return self.kill(DeadReason::Unknown);
+    fn push_vowel_literal(&mut self, input: InputChar) -> ParseStatus {
+        match input {
+            InputChar::Vowel {
+                raw,
+                base,
+                tone,
+                case,
+            } => {
+                let vowels_len = self.syllable.vowels.len();
+                if vowels_len == 0 {
+                    // First vowel; add it to the nucleus.
+                    self.syllable.vowels.push(Cased { value: base, case });
+                    self.syllable.tone = tone;
+                    return self.status;
                 }
+                // ---------------------------------------------------------
+                // Special case: gi
+                // A syllable prefix of "gi" is ambiguous: if another vowel
+                // follows the 'i', "gi" becomes the onset; otherwise 'g'
+                // stays the onset and the 'i' is the nucleus.
+                // ---------------------------------------------------------
+                else if vowels_len == 1
+                    // Only 'i' is in the vowel sequence so far
+                    && self.syllable.vowels[0].value == BaseVowel::I
+                    && self.syllable.onset == Some(Onset::G)
+                {
+                    // "gi" is already typed and another vowel follows,
+                    // so "gi" now becomes the onset.
+                    if !self.resolve_gi_onset() {
+                        // Unreachable in practice
+                        return self.kill(DeadReason::Unknown);
+                    }
+                }
+
+                // Vietnamese vowel sequence supports at most 3 vowels.
+                if vowels_len >= 3 {
+                    return self.kill(DeadReason::InvalidVowelSequence);
+                }
+                // Append the new vowel to the sequence
+                if !self.push_vowel_precomposed(base, tone, case) {
+                    return self.kill(DeadReason::InvalidVowelSequence);
+                }
+
+                // `normalize_uo` validates the length itself and only acts once
+                // there are at least two vowels - which is exactly when a third
+                // vowel is being pushed here.
+                self.normalize_uo();
+
+                return self.status;
             }
+            InputChar::Consonant(raw) => {
+                // ---------------------------------------------------------
+                // A consonant starts the coda - switch phase.
+                // ---------------------------------------------------------
 
-            // Vietnamese vowel sequence supports at most 3 vowels.
-            if self.syllable.vowels.len() >= 3 {
-                return self.kill(DeadReason::InvalidVowelSequence);
+                // An already-dead vowel sequence cannot be rescued once the coda has
+                // started, since the sequence has fused with the coda.
+                // e.g. 'chơa' + 'c' -> 'chơac' (invalid coda).
+                if NucleusStatus::Dead == self.validate_nucleus::<3>() {
+                    return self.kill(DeadReason::InvalidVowelSequence);
+                }
+
+                // `normalize_uo` validates the length itself and only acts once there
+                // are at least two vowels - which is exactly when a coda character is
+                // being pushed here.
+                self.normalize_uo();
+                self.set_phase(ParsePhase::Coda);
+
+                return self.push_coda_literal(input);
             }
-            // Append the new vowel to the sequence
-            else if !self.push_vowel_precomposed(base, tone, case) {
-                return self.kill(DeadReason::InvalidVowelSequence);
+            InputChar::Other(raw) => {
+                // Not an ASCII consonant: treat it as a special character.
+                return self.kill(DeadReason::InvalidCharacter);
             }
-
-            // `normalize_uo` validates the length itself and only acts once
-            // there are at least two vowels - which is exactly when a third
-            // vowel is being pushed here.
-            self.normalize_uo();
-
-            return self.status;
         }
-
-        // ---------------------------------------------------------
-        // Not a vowel.
-        //
-        // A consonant starts the coda - switch phase.
-        // ---------------------------------------------------------
-        if !is_ascii_consonant(ch) {
-            // Not an ASCII consonant: treat it as a special character.
-            return self.kill(DeadReason::InvalidCharacter);
-        }
-
-        // An already-dead vowel sequence cannot be rescued once the coda has
-        // started, since the sequence has fused with the coda.
-        // e.g. 'chơa' + 'c' -> 'chơac' (invalid coda).
-        if NucleusStatus::Dead == self.validate_nucleus::<3>() {
-            return self.kill(DeadReason::InvalidVowelSequence);
-        }
-
-        // `normalize_uo` validates the length itself and only acts once there
-        // are at least two vowels - which is exactly when a coda character is
-        // being pushed here.
-        self.normalize_uo();
-
-        self.syllable.coda_chars.push(ch);
-        self.set_phase(ParsePhase::Coda);
-        self.status
     }
 
     /// Resolves a tone or D-stroke transform key.
@@ -422,18 +517,19 @@ impl<KM: KeyMapping> Parser<KM> {
     /// Handles a transform key while in the `Vowel` phase.
     ///
     /// Tries tones, then the D-stroke, then vowel shapes.
-    fn push_vowel_transform(&mut self, key: char) -> ParseStatus {
+    fn push_vowel_transform(&mut self, input: InputChar) -> ParseStatus {
+        let raw_input = input.raw();
         // `Some` means the key resolved into a tone or a stroke.
-        if let Some(effect) = self.try_common_transform(key) {
+        if let Some(effect) = self.try_common_transform(raw_input) {
             match effect {
                 TransformEffect::Applied => {
                     return self.status;
                 }
                 TransformEffect::Reverted => {
-                    return self.push_vowel_literal(key);
+                    return self.push_vowel_literal(input);
                 }
                 TransformEffect::NotApplicable => {
-                    return self.push_vowel_literal(key);
+                    return self.push_vowel_literal(input);
                 }
             }
         }
@@ -446,10 +542,10 @@ impl<KM: KeyMapping> Parser<KM> {
         // Find the nearest vowel that can take the shape.
         // ---------------------------------------------------------
 
-        match self.try_shape_transform(key) {
+        match self.try_shape_transform(raw_input) {
             TransformEffect::Applied => self.status,
             TransformEffect::Reverted | TransformEffect::NotApplicable => {
-                self.push_vowel_literal(key)
+                self.push_vowel_literal(input)
             }
         }
     }
@@ -457,34 +553,38 @@ impl<KM: KeyMapping> Parser<KM> {
     /// Routes an input character to the coda literal / transform handlers.
     #[inline]
     fn push_coda(&mut self, input: char) -> ParseStatus {
+        let input_char = if is_ascii_consonant(input) {
+            InputChar::Consonant(input)
+        } else {
+            InputChar::Other(input)
+        };
+
         if self.mapping.is_transform(input) {
-            return self.push_coda_transform(input);
+            return self.push_coda_transform(input_char);
         }
-        self.push_coda_literal(input)
+        self.push_coda_literal(input_char)
     }
 
     /// Handles a literal character while in the `Coda` phase.
-    fn push_coda_literal(&mut self, ch: char) -> ParseStatus {
-        if self.syllable.coda_chars.len() > Coda::MAX_CODA_LEN {
+    fn push_coda_literal(&mut self, input: InputChar) -> ParseStatus {
+        if self.syllable.coda_chars.len() >= Coda::MAX_CODA_LEN {
             return self.kill(DeadReason::InvalidCoda);
-        }
+        } else if let InputChar::Consonant(raw) = input {
+            self.syllable.coda_chars.push(raw);
 
-        if !is_ascii_consonant(ch) {
+            // Re-validate right away to catch a dead coda.
+            match Coda::from_chars(&self.syllable.coda_chars) {
+                Ok(kind) => {
+                    self.syllable.coda = Some(kind);
+                    self.status
+                }
+
+                Err(_) => self.kill(DeadReason::InvalidCoda),
+            }
+        } else {
             // A vowel that arrives inside the coda is junk.
             // e.g. in 'tiếnog', the 'o' between 'n' and 'g' is junk.
             return self.kill(DeadReason::InvalidCharacter);
-        }
-
-        self.syllable.coda_chars.push(ch);
-
-        // Re-validate right away to catch a dead coda.
-        match Coda::from_chars(&self.syllable.coda_chars) {
-            Ok(kind) => {
-                self.syllable.coda = Some(kind);
-                self.status
-            }
-
-            Err(_) => self.kill(DeadReason::InvalidCoda),
         }
     }
 
@@ -492,20 +592,21 @@ impl<KM: KeyMapping> Parser<KM> {
     ///
     /// Tone, D-stroke and shape transforms are forwarded to the vowel
     /// handlers; anything else is treated as a literal.
-    fn push_coda_transform(&mut self, key: char) -> ParseStatus {
-        if let Some(effect) = self.try_common_transform(key) {
+    fn push_coda_transform(&mut self, input: InputChar) -> ParseStatus {
+        let raw_input = input.raw();
+        if let Some(effect) = self.try_common_transform(raw_input) {
             return match effect {
                 TransformEffect::Applied => self.status,
                 TransformEffect::Reverted | TransformEffect::NotApplicable => {
-                    self.push_coda_literal(key)
+                    self.push_coda_literal(input)
                 }
             };
         }
 
-        match self.try_shape_transform(key) {
+        match self.try_shape_transform(raw_input) {
             TransformEffect::Applied => self.status,
             TransformEffect::Reverted | TransformEffect::NotApplicable => {
-                self.push_coda_literal(key)
+                self.push_coda_literal(input)
             }
         }
     }
