@@ -84,6 +84,24 @@ const TONES: [Tone; TONE_COUNT] = [
 const CASES: [Case; 2] = [Case::Lower, Case::Upper];
 
 #[test]
+fn test_base_vowel_is_no_shape_invariant() {
+    // Verify `is_no_shape()` against the bit-extracted `shape()` for all 12 variants.
+    // This guards against regression if `BaseVowel` discriminants are reordered.
+    for vowel in BASES.iter() {
+        let expected_is_no_shape = vowel.shape() == Shape::None;
+
+        assert_eq!(
+            vowel.is_no_shape(),
+            expected_is_no_shape,
+            "Invariant violated for variant {:?}: expected is_no_shape() to be {}, but got {}",
+            vowel,
+            expected_is_no_shape,
+            vowel.is_no_shape()
+        );
+    }
+}
+
+#[test]
 fn base_vowel_ids_are_valid_and_ordered() {
     for (expected_id, &base) in BASES.iter().enumerate() {
         assert_eq!(

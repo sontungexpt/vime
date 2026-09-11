@@ -1,4 +1,4 @@
-use crate::phonology::decode_vowel_base;
+use crate::phonology::decode_vowel;
 use crate::{Shape, Tone};
 
 mod config;
@@ -91,7 +91,7 @@ impl KeyMapping for DefaultKeyMapping<'_> {
         // no shape key and passes through.
         let owner = match target {
             KeyTarget::Char(c) => {
-                let Some(base) = decode_vowel_base(c) else {
+                let Some((base, _, _)) = decode_vowel(c) else {
                     return None;
                 };
                 base.root()

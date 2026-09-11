@@ -40,7 +40,6 @@ impl Onset {
     pub const COUNT: usize = 28 as usize;
     pub const MAX_ID: usize = Self::COUNT - 1;
 
-    /// O(1) lookup from a numeric ID. Returns `Err(())` for out-of-bounds IDs.
     #[inline(always)]
     pub const fn from_id(id: usize) -> Result<Self, ()> {
         // Safety: real discriminants are contiguous from 0 through MAX_ID.
@@ -51,7 +50,6 @@ impl Onset {
         }
     }
 
-    /// O(1) case-insensitive lookup, compatible with const evaluation.
     #[inline(always)]
     pub const fn from_bytes(bytes: &[u8]) -> Result<Self, ()> {
         match bytes {
@@ -96,19 +94,15 @@ impl Onset {
             },
 
             // Three-byte onset ("ngh").
-            &[first, second, third] => {
-                if first | 0x20 == b'n' && second | 0x20 == b'g' && third | 0x20 == b'h' {
-                    Ok(Self::Ngh)
-                } else {
-                    Err(())
-                }
-            }
+            &[first, second, third] => match [first | 0x20, second | 0x20, third | 0x20] {
+                [b'n', b'g', b'h'] => Ok(Self::Ngh),
+                _ => Err(()),
+            },
 
             _ => Err(()),
         }
     }
 
-    /// O(1) case-insensitive lookup from a character slice.
     #[inline(always)]
     pub const fn from_chars(chars: &[char]) -> Result<Self, ()> {
         match chars {

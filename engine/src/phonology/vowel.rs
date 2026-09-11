@@ -168,17 +168,17 @@ impl BaseVowel {
     #[inline(always)]
     pub const fn from_parts(root: RootVowel, shape: Shape) -> Result<Self, ()> {
         match (root, shape) {
-            (RootVowel::O, Shape::Horn) => Ok(BaseVowel::OHorn),
-            (RootVowel::E, Shape::Circumflex) => Ok(BaseVowel::ECircumflex),
-            (RootVowel::A, Shape::Breve) => Ok(BaseVowel::ABreve),
-            (RootVowel::O, Shape::Circumflex) => Ok(BaseVowel::OCircumflex),
-            (RootVowel::A, Shape::Circumflex) => Ok(BaseVowel::ACircumflex),
-            (RootVowel::U, Shape::Horn) => Ok(BaseVowel::UHorn),
-            (RootVowel::A, Shape::None) => Ok(BaseVowel::A),
             (RootVowel::O, Shape::None) => Ok(BaseVowel::O),
+            (RootVowel::O, Shape::Horn) => Ok(BaseVowel::OHorn),
+            (RootVowel::O, Shape::Circumflex) => Ok(BaseVowel::OCircumflex),
             (RootVowel::E, Shape::None) => Ok(BaseVowel::E),
-            (RootVowel::I, Shape::None) => Ok(BaseVowel::I),
+            (RootVowel::E, Shape::Circumflex) => Ok(BaseVowel::ECircumflex),
+            (RootVowel::A, Shape::None) => Ok(BaseVowel::A),
+            (RootVowel::A, Shape::Breve) => Ok(BaseVowel::ABreve),
+            (RootVowel::A, Shape::Circumflex) => Ok(BaseVowel::ACircumflex),
             (RootVowel::U, Shape::None) => Ok(BaseVowel::U),
+            (RootVowel::U, Shape::Horn) => Ok(BaseVowel::UHorn),
+            (RootVowel::I, Shape::None) => Ok(BaseVowel::I),
             (RootVowel::Y, Shape::None) => Ok(BaseVowel::Y),
             _ => Err(()),
         }
@@ -229,7 +229,13 @@ impl BaseVowel {
     /// Returns the vowel with the shape removed (shape becomes [`Shape::None`]).
     #[inline(always)]
     pub const fn remove_shape(self) -> Self {
-        Self::from_root(self.root())
+        match self {
+            BaseVowel::OHorn | BaseVowel::OCircumflex => BaseVowel::O,
+            BaseVowel::ACircumflex | BaseVowel::ABreve => BaseVowel::A,
+            BaseVowel::ECircumflex => BaseVowel::E,
+            BaseVowel::UHorn => BaseVowel::U,
+            _ => self,
+        }
     }
 }
 
@@ -464,33 +470,6 @@ pub const fn decode_vowel(character: char) -> Option<(BaseVowel, Tone, Case)> {
         },
 
         _ => None,
-    }
-}
-
-/// Decodes and keeps only the [`BaseVowel`] part.
-#[inline(always)]
-pub const fn decode_vowel_base(character: char) -> Option<BaseVowel> {
-    match decode_vowel(character) {
-        Some((base, _, _)) => Some(base),
-        None => None,
-    }
-}
-
-/// Decodes and keeps only the [`Tone`] part.
-#[inline(always)]
-pub const fn decode_vowel_tone(character: char) -> Option<Tone> {
-    match decode_vowel(character) {
-        Some((_, tone, _)) => Some(tone),
-        None => None,
-    }
-}
-
-/// Decodes and keeps only the [`Case`] part.
-#[inline(always)]
-pub const fn decode_vowel_case(character: char) -> Option<Case> {
-    match decode_vowel(character) {
-        Some((_, _, case)) => Some(case),
-        None => None,
     }
 }
 
