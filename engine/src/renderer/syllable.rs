@@ -24,6 +24,14 @@ pub struct Syllable {
     pub tone: Tone,
 }
 
+impl Syllable {
+    // Returns the total number of characters in the syllable.
+    #[inline(always)]
+    pub const fn len(&self) -> usize {
+        self.onset_chars.len() + self.vowels.len() + self.coda_chars.len()
+    }
+}
+
 impl Default for Syllable {
     #[inline(always)]
     fn default() -> Self {

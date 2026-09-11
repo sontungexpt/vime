@@ -65,6 +65,8 @@ pub const fn check_nucleus_validity(vowels: &[BaseVowel]) -> NucleusStatus {
         [O, A, O] => Valid, // oao
         [O, E] => Valid,    // oe
 
+        [O, ABreve] => Valid, // oa
+
         // ─────────────────── u + y family ───────────────────
         [U, Y] => Valid,              // uy
         [U, Y, E] => InComplete,      // uye
@@ -80,6 +82,10 @@ pub const fn check_nucleus_validity(vowels: &[BaseVowel]) -> NucleusStatus {
 
         [U, O, I] => InComplete,      // uoi
         [U, OCircumflex, I] => Valid, // uôi
+
+        // ─────────────────── u + e family ───────────────────
+        [U, E] => InComplete,      // ue
+        [U, ECircumflex] => Valid, // uê
 
         // ─────────────────── ư + o transactional family ───────────────────
         [UHorn, O] => InComplete, // ưo

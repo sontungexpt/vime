@@ -147,6 +147,13 @@ impl<KM: KeyMapping> Parser<KM> {
         self.status
     }
 
+    /// Resets the parser to the initial state.
+    #[inline(always)]
+    pub const fn revive(&mut self) -> ParseStatus {
+        self.status = ParseStatus::Incomplete;
+        self.status
+    }
+
     /// Advances the parser to the given phase.
     #[inline(always)]
     const fn set_phase(&mut self, phase: ParsePhase) {

@@ -206,10 +206,7 @@ impl Renderer for DefaultRenderer {
     /// Renders the syllable as a Vietnamese string, placing the tone on the
     /// tone-bearing vowel and leaving the rest unmarked.
     fn render(&self, syllable: &Syllable) -> String {
-        let capacity =
-            syllable.onset_chars.len() + syllable.vowels.len() + syllable.coda_chars.len();
-
-        let mut output = String::with_capacity(capacity);
+        let mut output = String::with_capacity(syllable.len());
 
         output.extend(syllable.onset_chars.iter().copied());
 
