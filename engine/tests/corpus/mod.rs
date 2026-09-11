@@ -3,14 +3,13 @@
 //! The real pipeline under test is:
 //!
 //! ```text
-//! KeyMapping → BufferChar → Parser::push() → Syllable → Renderer
+//! KeyMapping → Parser::push() → Syllable → Renderer
 //! ```
 //!
-//! Every case lists the *exact* order in which characters are pushed. A bare
-//! ASCII letter like `'a'` arrives as `BufferChar::Literal` unless the mapping
-//! declares it a transform key (tone / shape / stroke). Precomposed
-//! Vietnamese vowels (`ạ`, `ắ`, `Ắ`, …) are kept as-is; the corpus never
-//! decomposes them.
+//! Every case lists the *exact* order in which characters are pushed; the
+//! parser classifies each one itself via the mapping. Precomposed Vietnamese
+//! vowels (`ạ`, `ắ`, `Ắ`, …) are kept as-is; the corpus never decomposes
+//! them.
 //!
 //! # Reading a case
 //!
@@ -26,8 +25,8 @@
 //! → "á"
 //! ```
 //!
-//! Anything the mapping does *not* treat as a transform key is pushed as a
-//! literal with `BufferChar::Literal`, exactly like `Engine` does.
+//! Anything the mapping does *not* treat as a transform key is handled as a
+//! literal, exactly like `Engine` does.
 //!
 //! # Corpus layout
 //!
@@ -53,7 +52,7 @@
 
 use vietnamese_engine::{
     renderer::parser::ParseStatus,
-    BufferChar, DefaultKeyMapping, DefaultRenderer, KeyMapping, Parser, Renderer,
+    DefaultKeyMapping, DefaultRenderer, Parser, Renderer,
 };
 
 pub mod dead_cases;
@@ -107,23 +106,12 @@ pub(crate) use dead_case;
 // Runner helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Classifies a character exactly like the engine: a key is `Transform` when
-/// the mapping declares it a tone, shape, or stroke key; everything else is a
-/// `Literal`. Precomposed vowels never classify as transforms.
-pub fn classify(mapping: &DefaultKeyMapping<'_>, ch: char) -> BufferChar {
-    if mapping.is_transform(ch) {
-        BufferChar::Transform(ch)
-    } else {
-        BufferChar::Literal(ch)
-    }
-}
-
 /// Pushes every character in order, then renders the resulting syllable.
 pub fn run_case(case: &TestCase, mapping: &DefaultKeyMapping<'_>) {
-    let mut parser = Parser::new(mapping);
+    let mut parser = Parser::new(*mapping);
 
     for &ch in case.input {
-        parser.push(classify(mapping, ch));
+        parser.push(ch);
     }
 
     let rendered = DefaultRenderer::default().render(parser.syllable());
@@ -145,10 +133,10 @@ pub fn run_case(case: &TestCase, mapping: &DefaultKeyMapping<'_>) {
 /// expected (dead) status. The syllable that a dead parse renders is not
 /// compared, only the `ParseStatus`.
 pub fn run_dead(case: &DeadCase, mapping: &DefaultKeyMapping<'_>) {
-    let mut parser = Parser::new(mapping);
+    let mut parser = Parser::new(*mapping);
 
     for &ch in case.input {
-        parser.push(classify(mapping, ch));
+        parser.push(ch);
     }
 
     assert_eq!(

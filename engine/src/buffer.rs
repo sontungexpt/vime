@@ -1,41 +1,16 @@
 use std::fmt::{self, Write};
 
-/// A raw character stored in the buffer.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum BufferChar {
-    /// An ordinary literal character.
-    Literal(char),
-    /// A transform key such as a tone or shape key. The char is always ASCII.
-    Transform(char),
-}
-
-impl BufferChar {
-    /// The character this buffer entry holds, regardless of its kind.
-    #[inline(always)]
-    pub const fn as_char(&self) -> char {
-        match *self {
-            BufferChar::Literal(c) | BufferChar::Transform(c) => c,
-        }
-    }
-
-    /// Whether this entry is a transform key.
-    #[inline(always)]
-    pub const fn is_transform(&self) -> bool {
-        matches!(self, BufferChar::Transform(_))
-    }
-}
-
 /// An editable list of raw input characters with a cursor.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Buffer {
-    chars: Vec<BufferChar>,
+    chars: Vec<char>,
     cursor: usize,
 }
 
 impl fmt::Display for Buffer {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         for character in &self.chars {
-            formatter.write_char(character.as_char())?;
+            formatter.write_char(*character)?;
         }
         Ok(())
     }
@@ -57,7 +32,7 @@ impl Buffer {
 
     /// The raw characters currently in the buffer.
     #[inline]
-    pub fn chars(&self) -> &[BufferChar] {
+    pub fn chars(&self) -> &[char] {
         &self.chars
     }
 
@@ -69,7 +44,7 @@ impl Buffer {
 
     /// Inserts `ch` at the cursor and moves the cursor forward.
     #[inline]
-    pub(crate) fn insert(&mut self, ch: BufferChar) {
+    pub(crate) fn insert(&mut self, ch: char) {
         self.chars.insert(self.cursor, ch);
         self.cursor += 1;
     }

@@ -26,7 +26,7 @@ mod result;
 
 pub mod phonology;
 
-pub use buffer::{Buffer, BufferChar};
+pub use buffer::Buffer;
 pub use config::Config;
 pub use engine::{Engine, InputEngine};
 pub use input::Input;

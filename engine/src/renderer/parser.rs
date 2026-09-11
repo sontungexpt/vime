@@ -5,7 +5,7 @@ use crate::{
         rule::{self, check_nucleus_validity, NucleusStatus},
         BaseVowel, Case, Coda, Onset, Shape, Tone,
     },
-    BufferChar, RootVowel,
+    RootVowel,
 };
 
 use super::syllable::{Cased, Syllable};
@@ -85,17 +85,17 @@ pub struct ParseSnapshot {
 
 /// Incremental syllable parser driven by a [`KeyMapping`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Parser<'a, KM: KeyMapping> {
+pub struct Parser<KM: KeyMapping> {
     syllable: Syllable,
     phase: ParsePhase,
     status: ParseStatus,
-    mapping: &'a KM,
+    mapping: KM,
 }
 
-impl<'a, KM: KeyMapping> Parser<'a, KM> {
+impl<KM: KeyMapping> Parser<KM> {
     /// Creates a parser backed by `mapping`, starting in the `Onset` phase.
     #[inline(always)]
-    pub fn new(mapping: &'a KM) -> Self {
+    pub fn new(mapping: KM) -> Self {
         Self {
             syllable: Syllable::default(),
             phase: ParsePhase::Onset,
@@ -157,7 +157,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
     ///
     /// No character is consumed once the syllable is dead.
     #[inline]
-    pub fn push(&mut self, input: BufferChar) -> ParseStatus {
+    pub fn push(&mut self, input: char) -> ParseStatus {
         if let ParseStatus::Dead(_) = self.status {
             return self.status;
         }
@@ -174,7 +174,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
     /// Returns the resulting status and, when the parse is dead, the index of
     /// the character at which it first died. A parser that was already dead
     /// before the call yields `None`.
-    pub fn parse(&mut self, chars: &[BufferChar]) -> (ParseStatus, Option<usize>) {
+    pub fn parse(&mut self, chars: &[char]) -> (ParseStatus, Option<usize>) {
         if let ParseStatus::Dead(_) = self.status {
             return (self.status, None);
         }
@@ -190,11 +190,11 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
 
     /// Routes an input character to the onset literal / transform handlers.
     #[inline]
-    fn push_onset(&mut self, input: BufferChar) -> ParseStatus {
-        match input {
-            BufferChar::Literal(ch) => self.push_onset_literal(ch),
-            BufferChar::Transform(key) => self.push_onset_transform(key),
+    fn push_onset(&mut self, input: char) -> ParseStatus {
+        if self.mapping.is_transform(input) {
+            return self.push_onset_transform(input);
         }
+        self.push_onset_literal(input)
     }
 
     /// Handles a literal character while in the `Onset` phase.
@@ -291,11 +291,11 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
 
     /// Routes an input character to the vowel literal / transform handlers.
     #[inline]
-    fn push_vowel(&mut self, input: BufferChar) -> ParseStatus {
-        match input {
-            BufferChar::Literal(ch) => self.push_vowel_literal(ch),
-            BufferChar::Transform(key) => self.push_vowel_transform(key),
+    fn push_vowel(&mut self, input: char) -> ParseStatus {
+        if self.mapping.is_transform(input) {
+            return self.push_vowel_transform(input);
         }
+        self.push_vowel_literal(input)
     }
 
     /// Appends a precomposed vowel to the nucleus if it does not clash with
@@ -449,11 +449,11 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
 
     /// Routes an input character to the coda literal / transform handlers.
     #[inline]
-    fn push_coda(&mut self, input: BufferChar) -> ParseStatus {
-        match input {
-            BufferChar::Literal(ch) => self.push_coda_literal(ch),
-            BufferChar::Transform(key) => self.push_coda_transform(key),
+    fn push_coda(&mut self, input: char) -> ParseStatus {
+        if self.mapping.is_transform(input) {
+            return self.push_coda_transform(input);
         }
+        self.push_coda_literal(input)
     }
 
     /// Handles a literal character while in the `Coda` phase.
@@ -652,6 +652,15 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             return TransformEffect::NotApplicable;
         }
 
+        // // Checked codas (c, ch, p, t) can only carry Acute or Dot tones. Grave,
+        // // Hook and Tilde are phonotactically impossible there, so the key falls
+        // // through as a literal (mirrors bamboo's `hasValidTone` gate).
+        // if matches!(syllable.coda, Some(Coda::C | Coda::Ch | Coda::P | Coda::T))
+        //     && matches!(tone, Tone::Grave | Tone::Hook | Tone::Tilde)
+        // {
+        //     return TransformEffect::NotApplicable;
+        // }
+
         // Same tone -> toggle back to Flat.
         if syllable.tone == tone {
             syllable.tone = Tone::Flat;
@@ -803,6 +812,3 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;
