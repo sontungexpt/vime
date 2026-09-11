@@ -2,27 +2,27 @@ use crate::{RootVowel, Shape, Tone};
 
 /// A keyboard key mapped to a Vietnamese tone.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ToneMap {
+pub struct ToneMapping {
     pub key: char,
     pub tone: Tone,
 }
 
 /// A keyboard key mapped to a Vietnamese vowel shape.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ShapeMap {
+pub struct ShapeMapping {
     pub key: char,
     pub vowel: RootVowel,
     pub shape: Shape,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct KeyConfig<'a> {
-    pub tones: &'a [ToneMap],
-    pub shapes: &'a [ShapeMap],
+pub struct InputLayout<'a> {
+    pub tones: &'a [ToneMapping],
+    pub shapes: &'a [ShapeMapping],
     pub strokes: &'a [char],
 }
 
-impl<'a> KeyConfig<'a> {
+impl<'a> InputLayout<'a> {
     /// Creates a config, validating the key maps against these rules:
     ///
     /// 1. **Tone key uniqueness** — a tone key must be unique across all
@@ -44,7 +44,11 @@ impl<'a> KeyConfig<'a> {
     ///
     /// Violations panic, so when invoked in a constant context a bad layout
     /// fails to compile.
-    pub const fn new(tones: &'a [ToneMap], shapes: &'a [ShapeMap], strokes: &'a [char]) -> Self {
+    pub const fn new(
+        tones: &'a [ToneMapping],
+        shapes: &'a [ShapeMapping],
+        strokes: &'a [char],
+    ) -> Self {
         // Rule 1: a tone key cannot map to two tones.
         let mut i = 0;
         while i < tones.len() {
@@ -78,7 +82,8 @@ impl<'a> KeyConfig<'a> {
             let mut j = i + 1;
             while j < shapes.len() {
                 if shapes[i].key == shapes[j].key
-                    && (shapes[i].vowel as u16) == (shapes[j].vowel as u16) {
+                    && (shapes[i].vowel as u16) == (shapes[j].vowel as u16)
+                {
                     panic!("Invalid layout: a shape key applies multiple shapes to one owner");
                 }
                 j += 1;
@@ -125,6 +130,10 @@ impl<'a> KeyConfig<'a> {
             i += 1;
         }
 
-        Self { tones, shapes, strokes }
+        Self {
+            tones,
+            shapes,
+            strokes,
+        }
     }
 }

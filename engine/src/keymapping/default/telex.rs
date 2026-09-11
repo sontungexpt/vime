@@ -1,62 +1,62 @@
-use super::{KeyConfig, ShapeMap, ToneMap};
+use super::{InputLayout, ShapeMapping, ToneMapping};
 use crate::{RootVowel, Shape, Tone};
 
 /// Telex layout: shapes on `a/e/o` (circumflex), `w` (breve/horn), `d`
 /// (stroke); tones on `s/f/r/x/j/z`.
-pub(crate) const CONFIG: &KeyConfig = &KeyConfig::new(
+pub(crate) const CONFIG: &InputLayout = &InputLayout::new(
     &[
-        ToneMap {
+        ToneMapping {
             key: 's',
             tone: Tone::Acute,
         },
-        ToneMap {
+        ToneMapping {
             key: 'f',
             tone: Tone::Grave,
         },
-        ToneMap {
+        ToneMapping {
             key: 'r',
             tone: Tone::Hook,
         },
-        ToneMap {
+        ToneMapping {
             key: 'x',
             tone: Tone::Tilde,
         },
-        ToneMap {
+        ToneMapping {
             key: 'j',
             tone: Tone::Dot,
         },
-        ToneMap {
+        ToneMapping {
             key: 'z',
             tone: Tone::Flat,
         },
     ],
     &[
-        ShapeMap {
+        ShapeMapping {
             key: 'a',
             vowel: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: 'w',
             vowel: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeMap {
+        ShapeMapping {
             key: 'e',
             vowel: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: 'o',
             vowel: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: 'w',
             vowel: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeMap {
+        ShapeMapping {
             key: 'w',
             vowel: RootVowel::U,
             shape: Shape::Horn,

@@ -6,7 +6,7 @@ mod telex;
 mod viqr;
 mod vni;
 
-pub use config::{KeyConfig, ShapeMap, ToneMap};
+pub use config::{InputLayout, ShapeMapping, ToneMapping};
 
 use super::api::KeyTarget;
 use super::KeyMapping;
@@ -14,15 +14,15 @@ use super::KeyMapping;
 /// Configuration-driven key mapping implementation.
 ///
 /// This is used by input methods whose behavior can be described
-/// declaratively through a [`KeyConfig`].
+/// declaratively through a [`InputLayout`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DefaultKeyMapping<'a> {
-    config: &'a KeyConfig<'a>,
+    config: &'a InputLayout<'a>,
 }
 
 impl<'a> DefaultKeyMapping<'a> {
     /// Creates a key mapping from a declarative configuration.
-    pub const fn new(config: &'a KeyConfig<'a>) -> Self {
+    pub const fn new(config: &'a InputLayout<'a>) -> Self {
         Self { config }
     }
 
@@ -46,7 +46,7 @@ impl<'a> DefaultKeyMapping<'a> {
 
     /// The underlying configuration.
     #[inline(always)]
-    pub const fn config(&self) -> &KeyConfig<'a> {
+    pub const fn config(&self) -> &InputLayout<'a> {
         self.config
     }
 }

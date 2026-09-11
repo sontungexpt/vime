@@ -1,62 +1,62 @@
-use super::{KeyConfig, ShapeMap, ToneMap};
+use super::{InputLayout, ShapeMapping, ToneMapping};
 use crate::{RootVowel, Shape, Tone};
 
 /// VIQr layout: shapes on `^` (circumflex), `(` (breve), `+` (horn), `d`
 /// (stroke); tones on `` ` `` `?` `~` `'` `.` and `z`.
-pub(crate) const CONFIG: &KeyConfig = &KeyConfig::new(
+pub(crate) const CONFIG: &InputLayout = &InputLayout::new(
     &[
-        ToneMap {
+        ToneMapping {
             key: '`',
             tone: Tone::Grave,
         },
-        ToneMap {
+        ToneMapping {
             key: '?',
             tone: Tone::Hook,
         },
-        ToneMap {
+        ToneMapping {
             key: '~',
             tone: Tone::Tilde,
         },
-        ToneMap {
+        ToneMapping {
             key: '\'',
             tone: Tone::Acute,
         },
-        ToneMap {
+        ToneMapping {
             key: '.',
             tone: Tone::Dot,
         },
-        ToneMap {
+        ToneMapping {
             key: 'z',
             tone: Tone::Flat,
         },
     ],
     &[
-        ShapeMap {
+        ShapeMapping {
             key: '^',
             vowel: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '^',
             vowel: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '^',
             vowel: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '(',
             vowel: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '+',
             vowel: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '+',
             vowel: RootVowel::U,
             shape: Shape::Horn,

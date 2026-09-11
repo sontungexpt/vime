@@ -30,7 +30,9 @@ pub use buffer::{Buffer, BufferChar};
 pub use config::Config;
 pub use engine::{Engine, InputEngine};
 pub use input::Input;
-pub use keymapping::{DefaultKeyMapping, KeyConfig, KeyMapping, KeyTarget, ShapeMap, ToneMap};
+pub use keymapping::{
+    DefaultKeyMapping, InputLayout, KeyMapping, KeyTarget, ShapeMapping, ToneMapping,
+};
 pub use phonology::{
     decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, RootVowel, Shape, Tone,
 };

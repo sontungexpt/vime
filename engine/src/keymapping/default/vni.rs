@@ -1,62 +1,62 @@
-use super::{KeyConfig, ShapeMap, ToneMap};
+use super::{InputLayout, ShapeMapping, ToneMapping};
 use crate::{RootVowel, Shape, Tone};
 
 /// VNI layout: shapes on `6` (circumflex), `7` (breve/horn), `8` (horn),
 /// `9` (stroke); tones on `1-5` and `0`.
-pub(crate) const CONFIG: &KeyConfig = &KeyConfig::new(
+pub(crate) const CONFIG: &InputLayout = &InputLayout::new(
     &[
-        ToneMap {
+        ToneMapping {
             key: '1',
             tone: Tone::Acute,
         },
-        ToneMap {
+        ToneMapping {
             key: '2',
             tone: Tone::Grave,
         },
-        ToneMap {
+        ToneMapping {
             key: '3',
             tone: Tone::Hook,
         },
-        ToneMap {
+        ToneMapping {
             key: '4',
             tone: Tone::Tilde,
         },
-        ToneMap {
+        ToneMapping {
             key: '5',
             tone: Tone::Dot,
         },
-        ToneMap {
+        ToneMapping {
             key: '0',
             tone: Tone::Flat,
         },
     ],
     &[
-        ShapeMap {
+        ShapeMapping {
             key: '6',
             vowel: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '7',
             vowel: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '6',
             vowel: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '6',
             vowel: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '7',
             vowel: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeMap {
+        ShapeMapping {
             key: '8',
             vowel: RootVowel::U,
             shape: Shape::Horn,
