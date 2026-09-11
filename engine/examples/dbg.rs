@@ -1,8 +1,8 @@
-use vime_engine::{Engine, Input};
+use vime_engine::{Engine, Key, KeyEvent};
 fn main() {
     let mut engine = Engine::default();
     for ch in "nguowif".chars() {
-        engine.input(Input::Character(ch));
+        engine.process_key(KeyEvent::key(Key::Character(ch)));
     }
     println!(
         "raw={} rendered={}",
@@ -12,7 +12,7 @@ fn main() {
     // replicate telex oo case too
     let mut e2 = Engine::default();
     for ch in "oo".chars() {
-        e2.input(Input::Character(ch));
+        e2.process_key(KeyEvent::key(Key::Character(ch)));
     }
     println!(
         "oo raw={} rendered={}",

@@ -1,26 +1,24 @@
 use crate::{
-    parser::ParseStatus, Buffer, Config, DefaultKeyMapping, DefaultRenderer, Input,
-    KeyMapping, Parser, Renderer, Result,
+    event::{Key, KeyEvent},
+    parser::ParseStatus,
+    Buffer, Config, DefaultKeyMapping, DefaultRenderer, KeyMapping, Parser, Renderer, Result,
 };
 
 const SUFFIX_SPACE: &str = " ";
 
-mod api;
-
-pub use api::InputEngine;
-
 /// The core input method state machine: buffers raw keystrokes and renders
 /// them into Vietnamese text.
-pub struct Engine<R: Renderer> {
+pub struct Engine<R: Renderer, KM: KeyMapping> {
     config: Config,
     keystrokes: Buffer,
     renderer: R,
-    layout: DefaultKeyMapping<'static>,
+    mapping: KM,
 }
 
-impl<R> Engine<R>
+impl<R, KM> Engine<R, KM>
 where
     R: Renderer,
+    KM: KeyMapping + Copy,
 {
     /// The engine configuration.
     pub fn config(&self) -> &Config {
@@ -35,7 +33,7 @@ where
     /// Renders the current buffer as Vietnamese text, or as the raw ASCII
     /// keystrokes when the buffer cannot form a valid syllable.
     pub fn rendered(&self) -> String {
-        let mut parser = Parser::new(self.layout);
+        let mut parser = Parser::new(self.mapping);
         let (status, _) = parser.parse(self.keystrokes.chars());
 
         if let ParseStatus::Dead(_) = status {
@@ -47,14 +45,14 @@ where
 
     /// The input layout the engine is currently using.
     #[inline(always)]
-    pub const fn layout(&self) -> DefaultKeyMapping<'static> {
-        self.layout
+    pub const fn layout(&self) -> KM {
+        self.mapping
     }
 
     /// Switches the engine to `layout` for subsequent renders and commits.
     #[inline(always)]
-    pub fn set_layout(&mut self, layout: DefaultKeyMapping<'static>) {
-        self.layout = layout;
+    pub fn set_layout(&mut self, layout: KM) {
+        self.mapping = layout;
     }
 
     /// Clears the buffer.
@@ -63,16 +61,24 @@ where
         Result::Changed
     }
 
-    /// Feeds one input into the engine.
-    pub fn input(&mut self, input: Input) -> Result {
-        match input {
-            Input::Character(character) => self.insert(character),
-            Input::Backspace => self.backspace(),
-            Input::Delete => self.delete(),
-            Input::Left => self.move_left(),
-            Input::Right => self.move_right(),
-            Input::Space => self.commit_with_suffix(SUFFIX_SPACE),
-            Input::Enter | Input::Tab | Input::Escape => self.commit(),
+    /// Processes a full keyboard event. Handles modifier policy (Ctrl/Alt/Super
+    /// are forwarded) and dispatches the key to the engine.
+    pub fn process_key(&mut self, event: KeyEvent) -> Result {
+        // if event
+        //     .state
+        //     .intersects(KeyState::CTRL | KeyState::ALT | KeyState::SUPER)
+        // {
+        //     return Result::Forward;
+        // }
+
+        match event.key {
+            Key::Character(character) => self.insert(character),
+            Key::Backspace => self.backspace(),
+            Key::Delete => self.delete(),
+            Key::Left => self.move_left(),
+            Key::Right => self.move_right(),
+            Key::Space => self.commit_with_suffix(SUFFIX_SPACE),
+            Key::Enter | Key::Tab | Key::Escape => self.commit(),
         }
     }
 
@@ -123,43 +129,14 @@ where
     }
 }
 
-impl<R> InputEngine for Engine<R>
-where
-    R: Renderer,
-{
-    fn input(&mut self, input: Input) -> Result {
-        self.input(input)
-    }
-
-    fn commit(&mut self) -> Result {
-        self.commit()
-    }
-
-    fn reset(&mut self) -> Result {
-        self.reset()
-    }
-
-    fn rendered(&self) -> String {
-        self.rendered()
-    }
-
-    fn keystrokes(&self) -> &Buffer {
-        self.keystrokes()
-    }
-
-    fn config(&self) -> &Config {
-        self.config()
-    }
-}
-
-impl Engine<DefaultRenderer> {
+impl Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
     /// Creates a Telex engine with the given configuration.
     pub fn new(config: Config) -> Self {
         Self {
             config,
             keystrokes: Buffer::new(),
             renderer: DefaultRenderer::default(),
-            layout: DefaultKeyMapping::telex(),
+            mapping: DefaultKeyMapping::telex(),
         }
     }
 
@@ -170,12 +147,12 @@ impl Engine<DefaultRenderer> {
             config: Config::default(),
             keystrokes: Buffer::new(),
             renderer: DefaultRenderer::default(),
-            layout,
+            mapping: layout,
         }
     }
 }
 
-impl Default for Engine<DefaultRenderer> {
+impl Default for Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
     fn default() -> Self {
         Self::new(Config::default())
     }

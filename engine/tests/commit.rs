@@ -1,7 +1,7 @@
 //! Commits real Vietnamese words through the `Engine` and checks that every
 //! typed word ends up as a committed, non-empty string of the same length.
 
-use vime_engine::{Engine, Input, Result};
+use vime_engine::{Engine, Key, KeyEvent, Result};
 
 const WORDS: &[&str] = &[
     "ba", "bà", "bá", "bạ", "bả", "bã", "bác", "bài", "bán", "bàn",
@@ -44,7 +44,10 @@ fn commit_handles_at_least_500_vietnamese_words() {
     for _ in 0..5 {
         for word in WORDS {
             for character in word.chars() {
-                assert_eq!(engine.input(Input::Character(character)), Result::Changed);
+                assert_eq!(
+                    engine.process_key(KeyEvent::key(Key::Character(character))),
+                    Result::Changed
+                );
             }
 
             match engine.commit() {

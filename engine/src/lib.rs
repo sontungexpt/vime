@@ -18,7 +18,7 @@
 
 mod config;
 mod engine;
-mod input;
+mod event;
 mod keymapping;
 mod parser;
 mod result;
@@ -29,8 +29,8 @@ pub mod renderer;
 
 pub use composition::{Buffer, Cased, Syllable};
 pub use config::Config;
-pub use engine::{Engine, InputEngine};
-pub use input::Input;
+pub use engine::Engine;
+pub use event::{Key, KeyEvent, KeyState};
 pub use keymapping::{
     DefaultKeyMapping, InputLayout, KeyMapping, KeyTarget, ShapeMapping, ToneMapping,
 };

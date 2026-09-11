@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 description = "Frontend-independent Vietnamese input method engine"
 license = "MIT"
+
+[dependencies]
+bitflags = "2"

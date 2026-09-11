@@ -1,5 +1,5 @@
 use std::io::{self, Read};
-use vime_engine::{Config, Engine, Input, Result};
+use vime_engine::{Config, Engine, Key, KeyEvent, Result};
 
 fn main() -> io::Result<()> {
     let mut input = String::new();
@@ -8,12 +8,12 @@ fn main() -> io::Result<()> {
 
     for character in input.chars() {
         let key = match character {
-            ' ' => Input::Space,
-            '\n' => Input::Enter,
-            '\t' => Input::Tab,
-            character => Input::Character(character),
+            ' ' => Key::Space,
+            '\n' => Key::Enter,
+            '\t' => Key::Tab,
+            character => Key::Character(character),
         };
-        match engine.input(key) {
+        match engine.process_key(KeyEvent::key(key)) {
             Result::Changed => eprint!("\r\x1b[2K{}", engine.rendered()),
             Result::Commit(text) => print!("{text}"),
             Result::Noop | Result::Forward => {}
