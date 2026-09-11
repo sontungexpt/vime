@@ -16,7 +16,7 @@ use corpus::{
     telex_tones, toggles, tones_shapes, uo_sequences, uppercase, vni, viqr,
 };
 
-use vietnamese_engine::DefaultKeyMapping;
+use vime_engine::DefaultKeyMapping;
 
 #[test]
 fn telex_corpus() {

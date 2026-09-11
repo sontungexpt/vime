@@ -78,4 +78,10 @@ pub const CASES: &[TestCase] = &[
     case!(['t', 'h', 'ư', 'a', 'r'], "thửa"),
     case!(['m', 'ư', 'a', 'n'], "mưan"),
     case!(['i', 'ê'], "iê"),
+    // ── expansion: precomposed keyed after onsets ──
+    case!(['t', 'h', 'u', 'ê'], "thuê"),
+    case!(['k', 'h', 'ế'], "khế"),
+    case!(['m', 'ù', 'a'], "mùa"),
+    case!(['c', 'h', 'ơ'], "chơ"),
+    case!(['t', 'h', 'ô'], "thô"),
 ];

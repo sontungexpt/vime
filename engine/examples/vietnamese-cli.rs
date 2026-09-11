@@ -1,5 +1,5 @@
 use std::io::{self, Read};
-use vietnamese_engine::{Config, Engine, Input, Result};
+use vime_engine::{Config, Engine, Input, Result};
 
 fn main() -> io::Result<()> {
     let mut input = String::new();

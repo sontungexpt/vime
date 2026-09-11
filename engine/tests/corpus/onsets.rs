@@ -82,4 +82,18 @@ pub const CASES: &[TestCase] = &[
     case!(['n', 'g', 'h', 'i'], "nghi"),
     // ── đ standalone ──
     case!(['d', 'd'], "đ"),
+    // ── expansion: more consonants + vowels ──
+    case!(['d', 'd', 'i'], "đi"),
+    case!(['x', 'e'], "xe"),
+    case!(['p', 'h', 'o'], "pho"),
+    case!(['k', 'h', 'u'], "khu"),
+    case!(['t', 'r', 'e'], "tre"),
+    case!(['n', 'h', 'u'], "nhu"),
+    case!(['n', 'h', 'a', 'n', 'h'], "nhanh"),
+    // ── expansion: gi with a plain vowel ──
+    case!(['g', 'i', 'u'], "giu"),
+    // ── expansion: vowel sequences with an onset ──
+    case!(['c', 'a', 'y'], "cay"),
+    case!(['b', 'o', 'i'], "boi"),
+    case!(['m', 'i', 'e'], "mie"),
 ];

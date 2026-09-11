@@ -3,7 +3,7 @@
 
 use super::{dead_case, DeadCase};
 
-use vietnamese_engine::{DeadReason, ParseStatus};
+use vime_engine::{DeadReason, ParseStatus};
 
 pub const TELEX: &[DeadCase] = &[
     // ── InvalidOnset ──
@@ -14,7 +14,10 @@ pub const TELEX: &[DeadCase] = &[
     dead_case!(['j', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
     dead_case!(['f', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
     dead_case!(['g', 'r', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
-    dead_case!(['t', 'r', 'g', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(
+        ['t', 'r', 'g', 'a'],
+        ParseStatus::Dead(DeadReason::InvalidOnset)
+    ),
     dead_case!(
         ['k', 'h', 'h', 'a'],
         ParseStatus::Dead(DeadReason::InvalidOnset)
@@ -49,7 +52,10 @@ pub const TELEX: &[DeadCase] = &[
         ParseStatus::Dead(DeadReason::InvalidCoda)
     ),
     dead_case!(['a', 'm', 'h'], ParseStatus::Dead(DeadReason::InvalidCoda)),
-    dead_case!(['a', 'n', 'g', 'g'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(
+        ['a', 'n', 'g', 'g'],
+        ParseStatus::Dead(DeadReason::InvalidCoda)
+    ),
     dead_case!(['a', 't', 'c'], ParseStatus::Dead(DeadReason::InvalidCoda)),
     dead_case!(['o', 'n', 'm'], ParseStatus::Dead(DeadReason::InvalidCoda)),
     // ── InvalidCharacter ──
@@ -65,6 +71,32 @@ pub const TELEX: &[DeadCase] = &[
         ['a', 'n', 'o'],
         ParseStatus::Dead(DeadReason::InvalidCharacter)
     ), // vowel inside a coda
+    // ── expansion ──
+    // InvalidOnset: too long a digraph
+    dead_case!(
+        ['t', 'r', 'l', 'a'],
+        ParseStatus::Dead(DeadReason::InvalidOnset)
+    ),
+    dead_case!(
+        ['n', 'g', 'c', 'a'],
+        ParseStatus::Dead(DeadReason::InvalidOnset)
+    ),
+    dead_case!(
+        ['p', 'h', 'f', 'a'],
+        ParseStatus::Dead(DeadReason::InvalidOnset)
+    ),
+    // InvalidCoda: `p h` / `ng h` are not valid codas
+    dead_case!(['a', 'p', 'h'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(
+        ['a', 'n', 'g', 'h'],
+        ParseStatus::Dead(DeadReason::InvalidCoda)
+    ),
+    // InvalidCharacter: keys that are neither consonants, vowels nor transforms
+    dead_case!(['a', '$'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(
+        ['c', 'h', '0'],
+        ParseStatus::Dead(DeadReason::InvalidCharacter)
+    ),
 ];
 
 pub const VNI: &[DeadCase] = &[
@@ -79,4 +111,9 @@ pub const VNI: &[DeadCase] = &[
     dead_case!(['a', 'b', 'd'], ParseStatus::Dead(DeadReason::InvalidCoda)),
     // flat-reset key lands as a literal inside the vowel phase
     dead_case!(['a', '0'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    // ── expansion ──
+    // shape key leads the slot → neither consonant nor vowel
+    dead_case!(['7', 'a'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    // second stroke with no `d` to revert → literal kills the syllable
+    dead_case!(['d', '9', '9'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
 ];

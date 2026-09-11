@@ -51,7 +51,7 @@
 //! (`parser_corpus.rs`); they sum the per-module counts and assert the corpus
 //! never silently shrinks.
 
-use vietnamese_engine::{
+use vime_engine::{
     DefaultKeyMapping, DefaultRenderer, ParseStatus, Parser, Renderer,
 };
 

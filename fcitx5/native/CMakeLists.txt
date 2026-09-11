@@ -26,8 +26,13 @@ add_custom_command(
 add_custom_target(vietnamese-fcitx5-backend DEPENDS "${RUST_BACKEND}")
 
 add_library(vime MODULE vime.cpp)
+get_target_property(FCITX5_INCLUDE_DIRS Fcitx5::Core INTERFACE_INCLUDE_DIRECTORIES)
+if(NOT FCITX5_INCLUDE_DIRS)
+    set(FCITX5_INCLUDE_DIRS "/usr/include/Fcitx5/Core")
+endif()
 target_include_directories(vime PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+    "${FCITX5_INCLUDE_DIRS}")
 add_dependencies(vime vietnamese-fcitx5-backend)
 target_link_directories(vime PRIVATE "${RUST_TARGET_DIR}/release")
 target_link_libraries(vime PRIVATE Fcitx5::Core vietnamese_fcitx5)

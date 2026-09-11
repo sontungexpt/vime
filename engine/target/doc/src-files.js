@@ -1,2 +1,0 @@
-createSrcSidebar('[["vietnamese_engine",["",[["character",[],["codec.rs","mod.rs","vowel.rs"]],["interpreter",[],["config.rs","mod.rs","telex.rs","vni.rs"]],["processor",[],["mod.rs","normalize.rs","render.rs","rules.rs","syllable.rs","tone.rs","vowel.rs"]]],["composition.rs","config.rs","engine.rs","input.rs","lib.rs","operation.rs","result.rs","state.rs"]]]]');
-//{"start":19,"fragment_lengths":[342]}

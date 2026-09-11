@@ -49,4 +49,7 @@ pub const CASES: &[TestCase] = &[
     // ── tone-then-third-vowel keeps the tone where it was placed ──
     case!(['u', 'o', 'w', 's', 'i'], "ưới"),
     case!(['u', 'o', 'o', 's', 'i'], "uối"),
+    // ── expansion: more uông tones ──
+    case!(['u', 'o', 'o', 'n', 'g', 'x'], "uỗng"),
+    case!(['u', 'o', 'o', 'n', 'g', 'j'], "uộng"),
 ];

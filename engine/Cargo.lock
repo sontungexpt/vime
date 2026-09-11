@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "vietnamese-engine"
+name = "vime-engine"
 version = "0.1.0"

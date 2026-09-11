@@ -83,4 +83,22 @@ pub const CASES: &[TestCase] = &[
     case!(['e', 's', 'r'], "ẻ"),
     case!(['o', 'f', 's'], "ó"),
     case!(['u', 's', 'j'], "ụ"),
+    // ── expansion: remaining y tones ──
+    case!(['y', 'x'], "ỹ"),
+    case!(['y', 'j'], "ỵ"),
+    // ── expansion: tones after digraph onsets ──
+    case!(['p', 'h', 'a', 's'], "phá"),
+    case!(['t', 'r', 'o', 'j'], "trọ"),
+    case!(['k', 'h', 'a', 'f'], "khà"),
+    // ── expansion: tone after a `nh` / `ng` coda ──
+    case!(['b', 'a', 'n', 'h', 's'], "bánh"),
+    // ── expansion: `oa` / `oe` tones (placed on the second letter) ──
+    case!(['o', 'a', 'r'], "oả"),
+    case!(['o', 'e', 'j'], "oẹ"),
+    case!(['x', 'o', 'a', 'f'], "xoà"),
+    // ── expansion: two-letter nucleus tones ──
+    case!(['e', 'u', 'f'], "èu"),
+    case!(['a', 'o', 'j'], "ạo"),
+    // ── expansion: `iêu` / `yếu`-style three-vowel tones ──
+    case!(['i', 'e', 'u', 'f'], "ièu"),
 ];

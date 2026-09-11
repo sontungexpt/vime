@@ -82,4 +82,14 @@ pub const CASES: &[TestCase] = &[
     case!(['t', 'h', 'u', 'e', '^'], "thuê"),
     case!(['h', 'o', 'a', '(', 'c', '.'], "hoặc"),
     case!(['k', 'h', 'o', 'e', '?'], "khoẻ"),
+    // ── expansion: d-stroke + a following vowel ──
+    case!(['d', 'd', 'i'], "đi"),
+    // ── expansion: quê / yêu / mưa shapes ──
+    case!(['q', 'u', 'e', '^'], "quê"),
+    case!(['y', 'e', '^', 'u'], "yêu"),
+    case!(['m', 'u', '+', 'a'], "mưa"),
+    // ── expansion: real syllables ──
+    case!(['h', 'u', '+', 'n', 'g'], "hưng"),
+    case!(['a', 'n', 'h', '`'], "ành"),
+    case!(['b', 'a', 'n', '?'], "bản"),
 ];

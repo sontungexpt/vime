@@ -101,4 +101,17 @@ pub const CASES: &[TestCase] = &[
     case!(['t', 'h', 'u', 'e', '6'], "thuê"),
     case!(['h', 'o', 'a', '7', 'c', '5'], "hoặc"),
     case!(['k', 'h', 'o', 'e', '3'], "khoẻ"),
+    // ── expansion: remaining y tones ──
+    case!(['y', '2'], "ỳ"),
+    case!(['y', '3'], "ỷ"),
+    case!(['y', '5'], "ỵ"),
+    // ── expansion: d9 + a following vowel ──
+    case!(['d', '9', 'i'], "đi"),
+    case!(['d', '9', 'i', '1'], "đí"),
+    // ── expansion: real syllables ──
+    case!(['t', 'h', 'a', 'n', 'h', '2'], "thành"),
+    case!(['n', 'g', 'h', 'e', '6', '1'], "nghế"),
+    case!(['s', 'u', '8', 'n', 'g'], "sưng"),
+    case!(['t', 'h', 'i', 'e', '6', 'u', '1'], "thiếu"),
+    case!(['b', 'a', 'n', 'h'], "banh"),
 ];

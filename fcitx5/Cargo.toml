@@ -9,4 +9,4 @@ license = "MIT"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-vietnamese-engine = { path = "../engine" }
+vime-engine = { path = "../engine" }

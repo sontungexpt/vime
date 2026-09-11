@@ -1,4 +1,4 @@
-use vietnamese_engine::{Engine, Input};
+use vime_engine::{Engine, Input};
 fn main() {
     let mut engine = Engine::default();
     for ch in "nguowif".chars() {

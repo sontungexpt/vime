@@ -41,4 +41,15 @@ pub const CASES: &[TestCase] = &[
     case!(['n', 'g', 'a', 'w'], "ngă"),
     case!(['d', 'd', 'a', 'w'], "đă"),
     case!(['b', 'u', 'w', 'n'], "bưn"),
+    // ── expansion: shapes with an onset ──
+    case!(['t', 'h', 'a', 'a'], "thâ"),
+    // ── expansion: shaped nuclei with a following vowel ──
+    case!(['e', 'e', 'u'], "êu"),
+    case!(['o', 'o', 'i'], "ôi"),
+    case!(['o', 'w', 'i'], "ơi"),
+    case!(['u', 'w', 'a'], "ưa"),
+    // ── expansion: shaped nuclei with a coda ──
+    case!(['a', 'a', 'n'], "ân"),
+    case!(['b', 'a', 'w', 'n'], "băn"),
+    case!(['u', 'w', 'n'], "ưn"),
 ];

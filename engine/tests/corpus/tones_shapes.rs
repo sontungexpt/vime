@@ -54,4 +54,11 @@ pub const CASES: &[TestCase] = &[
     case!(['o', 'w', 'n', 'f'], "ờn"),
     // ── shape swap keeps tone ──
     case!(['ấ', 'w'], "ắ"),
+    // ── expansion: tones on shaped nuclei with a following vowel ──
+    case!(['e', 'e', 'u', 'f'], "ều"),
+    case!(['o', 'o', 'i', 'f'], "ồi"),
+    case!(['u', 'w', 'a', 'r'], "ửa"),
+    // ── expansion: tones on shaped nuclei with a coda ──
+    case!(['b', 'a', 'w', 'n', 's'], "bắn"),
+    case!(['b', 'a', 'a', 'n', 'f'], "bần"),
 ];

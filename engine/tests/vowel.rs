@@ -20,7 +20,7 @@
 //! - `is_vowel` consistency with the decoder
 //! - shape replacement consistency
 
-use vietnamese_engine::{decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, Shape, Tone};
+use vime_engine::{decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, Shape, Tone};
 
 const BASE_COUNT: usize = 12;
 const TONE_COUNT: usize = 6;

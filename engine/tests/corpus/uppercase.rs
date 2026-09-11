@@ -64,4 +64,11 @@ pub const CASES: &[TestCase] = &[
     case!(['Ắ', 'w'], "Áw"),
     case!(['Ấ', 'f'], "Ầ"),
     case!(['Ạ', 'w'], "Ặ"),
+    // ── expansion: uppercase digraph onsets ──
+    case!(['D', 'D', 'I'], "ĐI"),
+    case!(['B', 'A', 'Y'], "BAY"),
+    case!(['T', 'R', 'A'], "TRA"),
+    case!(['N', 'H', 'A'], "NHA"),
+    // ── expansion: uppercase shapes + vowel ──
+    case!(['Y', 'E', 'E', 'U'], "YÊU"),
 ];

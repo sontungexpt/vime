@@ -1,6 +1,6 @@
 use std::ffi::{c_char, CString};
 use std::ptr;
-use vietnamese_engine::{DefaultRenderer, DefaultKeyMapping, Engine, Input, Result};
+use vime_engine::{DefaultRenderer, DefaultKeyMapping, Engine, Input, Result};
 
 #[repr(C)]
 pub struct VietnameseFcitx5Engine {
