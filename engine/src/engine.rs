@@ -1,5 +1,5 @@
 use crate::{
-    renderer::parser::ParseStatus, Buffer, Config, DefaultKeyMapping, DefaultRenderer, Input,
+    parser::ParseStatus, Buffer, Config, DefaultKeyMapping, DefaultRenderer, Input,
     KeyMapping, Parser, Renderer, Result,
 };
 
@@ -15,6 +15,7 @@ pub struct Engine<R: Renderer> {
     config: Config,
     keystrokes: Buffer,
     renderer: R,
+    layout: DefaultKeyMapping<'static>,
 }
 
 impl<R> Engine<R>
@@ -34,7 +35,7 @@ where
     /// Renders the current buffer as Vietnamese text, or as the raw ASCII
     /// keystrokes when the buffer cannot form a valid syllable.
     pub fn rendered(&self) -> String {
-        let mut parser = Parser::new(DefaultKeyMapping::telex());
+        let mut parser = Parser::new(self.layout);
         let (status, _) = parser.parse(self.keystrokes.chars());
 
         if let ParseStatus::Dead(_) = status {
@@ -42,6 +43,18 @@ where
         }
 
         self.renderer.render(parser.syllable())
+    }
+
+    /// The input layout the engine is currently using.
+    #[inline(always)]
+    pub const fn layout(&self) -> DefaultKeyMapping<'static> {
+        self.layout
+    }
+
+    /// Switches the engine to `layout` for subsequent renders and commits.
+    #[inline(always)]
+    pub fn set_layout(&mut self, layout: DefaultKeyMapping<'static>) {
+        self.layout = layout;
     }
 
     /// Clears the buffer.
@@ -146,6 +159,18 @@ impl Engine<DefaultRenderer> {
             config,
             keystrokes: Buffer::new(),
             renderer: DefaultRenderer::default(),
+            layout: DefaultKeyMapping::telex(),
+        }
+    }
+
+    /// Creates an engine using `layout` with the default configuration.
+    #[inline(always)]
+    pub fn with_layout(layout: DefaultKeyMapping<'static>) -> Self {
+        Self {
+            config: Config::default(),
+            keystrokes: Buffer::new(),
+            renderer: DefaultRenderer::default(),
+            layout,
         }
     }
 }

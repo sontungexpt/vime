@@ -1,10 +1,10 @@
 use std::ffi::{c_char, CString};
 use std::ptr;
-use vietnamese_engine::{Engine, Input, Result};
+use vietnamese_engine::{DefaultRenderer, DefaultKeyMapping, Engine, Input, Result};
 
 #[repr(C)]
 pub struct VietnameseFcitx5Engine {
-    engine: Engine,
+    engine: Engine<DefaultRenderer>,
 }
 
 #[repr(C)]
@@ -99,12 +99,10 @@ pub unsafe extern "C" fn vietnamese_fcitx5_process_key(
         2 => Input::Delete,
         3 => Input::Left,
         4 => Input::Right,
-        5 => Input::Home,
-        6 => Input::End,
-        7 => Input::Enter,
-        8 => Input::Escape,
-        9 => Input::Tab,
-        10 => Input::Space,
+        5 => Input::Enter,
+        6 => Input::Escape,
+        7 => Input::Tab,
+        8 => Input::Space,
         _ => return VietnameseFcitx5Output::empty(),
     };
     let result = engine.engine.input(input);
@@ -122,10 +120,10 @@ pub unsafe extern "C" fn vietnamese_fcitx5_set_method(
     vni: bool,
 ) {
     if let Some(engine) = engine.as_mut() {
-        engine.engine.set_interpreter(if vni {
-            vietnamese_engine::ConfiguredInterpreter::vni()
+        engine.engine.set_layout(if vni {
+            DefaultKeyMapping::vni()
         } else {
-            vietnamese_engine::ConfiguredInterpreter::telex()
+            DefaultKeyMapping::telex()
         });
     }
 }
@@ -142,7 +140,7 @@ pub unsafe extern "C" fn vietnamese_fcitx5_free_string(value: *mut c_char) {
     }
 }
 
-fn output(engine: &Engine, result: Result) -> VietnameseFcitx5Output {
+fn output(engine: &Engine<DefaultRenderer>, result: Result) -> VietnameseFcitx5Output {
     let mut output = VietnameseFcitx5Output::empty();
     match result {
         Result::Changed => {

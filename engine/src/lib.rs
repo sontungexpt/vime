@@ -16,25 +16,27 @@
 //! - [`Buffer`] + [`Engine`]: raw input buffering, cursor editing, and the
 //!   frontend-facing state machine.
 
-mod buffer;
 mod config;
 mod engine;
 mod input;
 mod keymapping;
-pub mod renderer;
+mod parser;
 mod result;
 
+pub mod composition;
 pub mod phonology;
+pub mod renderer;
 
-pub use buffer::Buffer;
+pub use composition::{Buffer, Cased, Syllable};
 pub use config::Config;
 pub use engine::{Engine, InputEngine};
 pub use input::Input;
 pub use keymapping::{
     DefaultKeyMapping, InputLayout, KeyMapping, KeyTarget, ShapeMapping, ToneMapping,
 };
+pub use parser::{DeadReason, ParsePhase, ParseStatus, Parser};
 pub use phonology::{
     decode_vowel, encode_vowel, is_vowel, BaseVowel, Case, RootVowel, Shape, Tone,
 };
-pub use renderer::{Cased, DefaultRenderer, Orthography, Parser, Renderer, Syllable};
+pub use renderer::{DefaultRenderer, Orthography, Renderer};
 pub use result::Result;

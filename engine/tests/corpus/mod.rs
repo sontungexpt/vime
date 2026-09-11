@@ -52,7 +52,7 @@
 //! never silently shrinks.
 
 use vietnamese_engine::{
-    renderer::parser::ParseStatus, DefaultKeyMapping, DefaultRenderer, Parser, Renderer,
+    DefaultKeyMapping, DefaultRenderer, ParseStatus, Parser, Renderer,
 };
 
 pub mod dead_cases;

@@ -8,7 +8,7 @@ use crate::{
     RootVowel,
 };
 
-use super::syllable::{Cased, Syllable};
+use crate::composition::{Cased, Syllable};
 
 /// Whether `c` is an ASCII consonant character.
 ///
@@ -163,7 +163,6 @@ impl<KM: KeyMapping> Parser<KM> {
     /// Pushes one input buffer character and returns the new status.
     ///
     /// No character is consumed once the syllable is dead.
-    #[inline]
     pub fn push(&mut self, input: char) -> ParseStatus {
         if let ParseStatus::Dead(_) = self.status {
             return self.status;

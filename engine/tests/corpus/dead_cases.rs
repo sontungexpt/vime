@@ -3,7 +3,7 @@
 
 use super::{dead_case, DeadCase};
 
-use vietnamese_engine::renderer::parser::{DeadReason, ParseStatus};
+use vietnamese_engine::{DeadReason, ParseStatus};
 
 pub const TELEX: &[DeadCase] = &[
     // ── InvalidOnset ──
