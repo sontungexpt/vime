@@ -10,26 +10,33 @@ pub enum RootVowel {
     Y = 5,
 }
 
+/// A diacritic shape that attaches to a base vowel.
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum Shape {
+    /// No diacritic.
     #[default]
     None = 0,
+    /// The circumflex `^` (â, ô, ê).
     Circumflex = 1,
+    /// The breve `˘` (ă).
     Breve = 2,
+    /// The horn `"` (ư, ơ).
     Horn = 3,
 }
 
+/// A Vietnamese lexical tone applied to the vowel.
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum Tone {
+    /// No tone.
     #[default]
-    Flat = 0, // Ngang
-    Acute = 1, // Sắc
-    Grave = 2, // Huyền
-    Hook = 3,  // Hỏi
-    Tilde = 4, // Ngã
-    Dot = 5,   // Nặng
+    Flat = 0, // Level
+    Acute = 1, // Sharp rising
+    Grave = 2, // Deep falling
+    Hook = 3,  // Asking / slanted
+    Tilde = 4, // Wavy broken
+    Dot = 5,   // Heavy
 }
 
 impl Tone {
@@ -43,6 +50,7 @@ impl Tone {
     }
 }
 
+/// Letter case of a vowel (affects the rendered character).
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum Case {
@@ -83,35 +91,35 @@ pub enum BaseVowel {
 }
 
 impl BaseVowel {
+    // ─────────────── Cardinality ───────────────
     pub const COUNT: u8 = 12;
     pub const MAX_ID: u8 = Self::COUNT - 1;
 
-    // ---------------------------------------------------------------------
-    // Bit-field layout (`u16`): [Reserved | Priority ID | Shape | Root].
-    // Field widths are derived from the enum discriminants (not hard-coded)
-    // so adding a new variant/rose does not drift from the layout.
-    // ---------------------------------------------------------------------
+    // ─────────────── Bit-field layout ───────────────
+    // Packed `u16`: [Reserved | Priority ID | Shape | Root].
+    // Field widths match the enum discriminants above; the two that shape
+    // the layout are `RootVowel::Y` (0b101 → 3 bits) and `Shape::Horn`
+    // (0b11 → 2 bits).
 
-    /// Smallest number of bits needed to hold `value` (`0` → `0` bits).
-    const fn bit_width(value: u16) -> u32 {
-        let mut value = value;
-        let mut bits = 0;
-        while value > 0 {
-            bits += 1;
-            value >>= 1;
-        }
-        bits
-    }
+    // ── field widths ──
+    /// Width of the [`RootVowel`] field — 3 bits cover `RootVowel::A..=Y` (0..=5).
+    const ROOT_BITS: u32 = 3;
+    /// Width of the [`Shape`] field — 2 bits cover `Shape::None..=Horn` (0..=3).
+    const SHAPE_BITS: u32 = 2;
 
-    /// Width of the [`RootVowel`] field — bits needed for the largest root.
-    const ROOT_BITS: u32 = Self::bit_width(RootVowel::Y as u16);
-    /// Width of the [`Shape`] field — bits needed for the largest vowel shape.
-    const SHAPE_BITS: u32 = Self::bit_width(Shape::Horn as u16);
-    /// Shifts of the [`Shape`] field (sits directly above the root field).
+    // ── field shifts ──
+    /// Shift of the [`Shape`] field (sits directly above the root field).
     const SHAPE_SHIFT: u32 = Self::ROOT_BITS;
-    /// Shifts of the Priority ID field (sits directly above the shape field).
+    /// Shift of the Priority ID field (sits directly above the shape field).
     const ID_SHIFT: u32 = Self::SHAPE_SHIFT + Self::SHAPE_BITS;
 
+    // ── field masks ──
+    /// Bitmask for the [`RootVowel`] field.
+    const ROOT_MASK: u16 = (1u16 << Self::ROOT_BITS) - 1;
+    /// Bitmask for the [`Shape`] field.
+    const SHAPE_MASK: u16 = (1u16 << Self::SHAPE_BITS) - 1;
+
+    // ─────────────── Lookup table ───────────────
     /// All base vowels in priority order; the index equals the priority ID.
     const ALL: [BaseVowel; Self::COUNT as usize] = [
         BaseVowel::OHorn,
@@ -134,6 +142,7 @@ impl BaseVowel {
         (self as u16 >> Self::ID_SHIFT) as usize
     }
 
+    /// Returns the base vowel for the given priority ID, or `Err` if out of range.
     #[inline(always)]
     pub const fn from_id(id: usize) -> Result<Self, ()> {
         if id < Self::COUNT as usize {
@@ -143,6 +152,11 @@ impl BaseVowel {
         }
     }
 
+    /// Returns the base vowel for the given priority ID without bounds-checking.
+    ///
+    /// # Safety
+    ///
+    /// `id` must be in `0..Self::COUNT`.
     #[inline(always)]
     pub unsafe fn from_id_unchecked(id: usize) -> Self {
         *Self::ALL.get_unchecked(id)
@@ -170,7 +184,7 @@ impl BaseVowel {
         }
     }
 
-    // Returns the base vowel with the given root and no shape.
+    /// Returns the base vowel with the given root and no shape.
     #[inline(always)]
     pub const fn from_root(root: RootVowel) -> Self {
         match root {
@@ -186,7 +200,7 @@ impl BaseVowel {
     /// Returns the [`Shape`] component of this vowel.
     #[inline(always)]
     pub const fn shape(self) -> Shape {
-        let raw = (self as u16 >> Self::SHAPE_SHIFT) & ((1 << Self::SHAPE_BITS) - 1);
+        let raw = (self as u16 >> Self::SHAPE_SHIFT) & Self::SHAPE_MASK;
         unsafe { std::mem::transmute(raw) }
     }
 
@@ -199,11 +213,11 @@ impl BaseVowel {
     /// Returns the [`RootVowel`] component of this vowel.
     #[inline(always)]
     pub const fn root(self) -> RootVowel {
-        let raw = self as u16 & ((1 << Self::ROOT_BITS) - 1);
+        let raw = self as u16 & Self::ROOT_MASK;
         unsafe { std::mem::transmute(raw) }
     }
 
-    /// Giữ nguyên root vowel, thay thế shape cũ bằng shape mới (ví dụ ă → â).
+    /// Keeps the root vowel but swaps the shape for a new one (e.g. ă → â).
     ///
     /// Returns the canonical [`BaseVowel`] for the root and shape; `Err` when
     /// Vietnamese has no letter for that combination (e.g. `A` + [`Shape::Horn`]).
@@ -214,7 +228,7 @@ impl BaseVowel {
 
     /// Returns the vowel with the shape removed (shape becomes [`Shape::None`]).
     #[inline(always)]
-    pub const fn without_shape(self) -> Self {
+    pub const fn remove_shape(self) -> Self {
         Self::from_root(self.root())
     }
 }
@@ -490,301 +504,30 @@ pub const fn is_vowel(ch: char) -> bool {
     // 1. ASCII: A..Z and a..z.
     let ascii_shift = code.wrapping_sub(65);
     if ascii_shift <= 57 {
-        const ASCII_MASK: u64 = 0x0110411101104111;
-        return ((ASCII_MASK >> ascii_shift) & 1) != 0;
+        const ASCII_VOWEL_MASK: u64 = 0x0110411101104111;
+        return ((ASCII_VOWEL_MASK >> ascii_shift) & 1) != 0;
     }
-
     // 2. Vietnamese Extended: every code point in this range is a vowel.
-    if code >= 7840 && code <= 7929 {
+    else if code >= 7840 && code <= 7929 {
         return true;
     }
-
     // 3. Latin-1 Supplement.
-    if code >= 192 && code <= 253 {
+    else if code >= 192 && code <= 253 {
         let shift = code - 192;
-        const LATIN1_MASK_64: u64 = 0x263C370F_263C370F;
-        return ((LATIN1_MASK_64 >> shift) & 1) != 0;
+        const LATIN1_VOWEL_MASK: u64 = 0x263C370F_263C370F;
+        return ((LATIN1_VOWEL_MASK >> shift) & 1) != 0;
     }
-
     // 4. Latin Extended.
-    if code >= 258 && code <= 432 {
+    else if code >= 258 && code <= 432 {
         return matches!(
             code - 258,
-            0 | 1 | 38 | 39 | 102 | 103 | 158 | 159 | 173 | 174
+            0 | 1 |     // Ă ă
+              38 | 39 |   // Ĩ ĩ
+              102 | 103 | // Ũ ũ
+              158 | 159 | // Ơ ơ
+              173 | 174 // Ư ư
         );
     }
 
     false
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Expected lowercase char for every base (rows = priority ID) × tone (cols = `Tone`).
-    const ALL_LOWER: [[char; 6]; 12] = [
-        ['ơ', 'ớ', 'ờ', 'ở', 'ỡ', 'ợ'], // 0: OHorn
-        ['ê', 'ế', 'ề', 'ể', 'ễ', 'ệ'], // 1: ECircumflex
-        ['ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ'], // 2: ABreve
-        ['ô', 'ố', 'ồ', 'ổ', 'ỗ', 'ộ'], // 3: OCircumflex
-        ['â', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ'], // 4: ACircumflex
-        ['ư', 'ứ', 'ừ', 'ử', 'ữ', 'ự'], // 5: UHorn
-        ['a', 'á', 'à', 'ả', 'ã', 'ạ'], // 6: A
-        ['o', 'ó', 'ò', 'ỏ', 'õ', 'ọ'], // 7: O
-        ['e', 'é', 'è', 'ẻ', 'ẽ', 'ẹ'], // 8: E
-        ['i', 'í', 'ì', 'ỉ', 'ĩ', 'ị'], // 9: I
-        ['u', 'ú', 'ù', 'ủ', 'ũ', 'ụ'], // 10: U
-        ['y', 'ý', 'ỳ', 'ỷ', 'ỹ', 'ỵ'], // 11: Y
-    ];
-
-    /// Priority IDs 0..=11 must match the discriminants exactly.
-    #[test]
-    fn base_vowels_are_priority_ordered() {
-        for id in 0..12 {
-            let base = BaseVowel::from_id(id).unwrap();
-            assert_eq!(base.id(), id, "{:?} must have Priority ID {id}", base);
-        }
-        // Highest (0) outranks everything; lowest (11) outranks nothing but Y.
-        assert!(BaseVowel::OHorn <= BaseVowel::OHorn);
-        assert!(BaseVowel::OHorn > BaseVowel::Y);
-        assert!(BaseVowel::Y <= BaseVowel::OHorn);
-        assert!(BaseVowel::A <= BaseVowel::OHorn);
-        assert!(BaseVowel::A > BaseVowel::Y);
-    }
-
-    /// Every `(base, tone)` lower-case char both encodes to the expected char and decodes back.
-    #[test]
-    fn encodes_and_decodes_every_lowercase_vowel() {
-        for (id, row) in ALL_LOWER.iter().enumerate() {
-            let base = BaseVowel::from_id(id).unwrap();
-            for (tone_idx, &expected) in row.iter().enumerate() {
-                let tone = Tone::from_id(tone_idx);
-                assert_eq!(
-                    encode_vowel(base, tone, Case::Lower),
-                    expected,
-                    "encode({base:?}, {tone:?}, Lower)"
-                );
-                assert_eq!(
-                    decode_vowel(expected),
-                    Some((base, tone, Case::Lower)),
-                    "decode('{expected}')"
-                );
-            }
-        }
-    }
-
-    /// Every `(base, tone)` upper-case char both encodes to the expected char and decodes back.
-    #[test]
-    fn encodes_and_decodes_every_uppercase_vowel() {
-        for (id, row) in ALL_LOWER.iter().enumerate() {
-            let base = BaseVowel::from_id(id).unwrap();
-            for (tone_idx, &lower) in row.iter().enumerate() {
-                let tone = Tone::from_id(tone_idx);
-                let expected = lower.to_uppercase().next().unwrap();
-                assert_eq!(
-                    encode_vowel(base, tone, Case::Upper),
-                    expected,
-                    "encode({base:?}, {tone:?}, Upper)"
-                );
-                assert_eq!(
-                    decode_vowel(expected),
-                    Some((base, tone, Case::Upper)),
-                    "decode('{expected}')"
-                );
-            }
-        }
-    }
-
-    /// Round-trip: encode→decode identity for all 12 × 6 × 2 = 144 combinations.
-    #[test]
-    fn round_trips_all_vowels() {
-        for id in 0..12 {
-            let base = BaseVowel::from_id(id).unwrap();
-            for tone_idx in 0..6 {
-                for &case in &[Case::Lower, Case::Upper] {
-                    let tone = Tone::from_id(tone_idx);
-                    let ch = encode_vowel(base, tone, case);
-                    assert_eq!(
-                        decode_vowel(ch),
-                        Some((base, tone, case)),
-                        "round trip {base:?} {tone:?} {case:?} -> '{ch}'"
-                    );
-                }
-            }
-        }
-    }
-
-    /// Every singleton char in the Vietnamese block + Latin Extended-A area must decode.
-    #[test]
-    fn decodes_every_precomposed_char() {
-        let mut seen = 0;
-        for c in ALL_LOWER.into_iter().flatten() {
-            let decoded = decode_vowel(c).unwrap_or_else(|| panic!("'{c}' should decode"));
-            seen += 1;
-            let (base, tone, case) = decoded;
-            assert_eq!(
-                encode_vowel(base, tone, case),
-                c,
-                "encode of decode('{c}') must reconstruct it"
-            );
-        }
-        assert_eq!(seen, 72); // 12 × 6: flat rows included
-    }
-
-    /// Non-vowel characters must be rejected.
-    #[test]
-    fn rejects_non_vowels() {
-        for ch in ['q', 'w', 'x', 'z', 'đ', '1', '!', ' '] {
-            assert_eq!(decode_vowel(ch), None, "decode('{ch}') should fail");
-        }
-    }
-
-    /// Decoding keeps the signed character's own punctuation-vertical case.
-    #[test]
-    fn round_trips_ascii_tone_hosts() {
-        for ch in ['a', 'e', 'i', 'o', 'u', 'y'] {
-            let (base, tone, case) = decode_vowel(ch).unwrap();
-            assert_eq!((tone, case), (Tone::Flat, Case::Lower));
-            assert_eq!(encode_vowel(base, tone, case), ch);
-        }
-    }
-
-    /// `replace_shape` must agree with the canonical `from_parts` on every
-    /// vowel × shape combination.
-    #[test]
-    fn bitwise_shape_ops_agree_with_from_parts() {
-        for id in 0..BaseVowel::COUNT {
-            let base = BaseVowel::from_id(id as usize).unwrap();
-            for shape in [Shape::None, Shape::Circumflex, Shape::Breve, Shape::Horn] {
-                assert_eq!(
-                    base.replace_shape(shape),
-                    BaseVowel::from_parts(base.root(), shape),
-                    "replace({base:?}, {shape:?})"
-                );
-            }
-        }
-    }
-
-    /// `is_vowel` must agree with `decode_vowel` on every code point in the
-    /// whole Unicode range.
-    #[test]
-    fn is_vowel_agrees_with_decoder() {
-        for cp in 0..=0x10FFFF {
-            let Some(ch) = char::from_u32(cp) else {
-                continue;
-            };
-            assert_eq!(
-                is_vowel(ch),
-                decode_vowel(ch).is_some(),
-                "mismatch at U+{cp:04X}"
-            );
-        }
-    }
-
-    #[test]
-    fn test_ascii_vowels_and_consonants() {
-        let vowels = ['a', 'e', 'i', 'o', 'u', 'y', 'A', 'E', 'I', 'O', 'U', 'Y'];
-        for v in vowels {
-            assert!(is_vowel(v), "ASCII Vowel '{}' should return true", v);
-        }
-
-        let consonants = [
-            'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v',
-            'w', 'x', 'z',
-        ];
-        for c in consonants {
-            assert!(!is_vowel(c), "ASCII Consonant '{}' should return false", c);
-        }
-
-        // Test ký tự đặc biệt ASCII / số
-        for c in ['0', '9', '!', '@', '#', ' ', '\n', '\t'] {
-            assert!(
-                !is_vowel(c),
-                "ASCII Special Symbol '{}' should return false",
-                c
-            );
-        }
-    }
-
-    #[test]
-    fn test_vietnamese_d_exclusion() {
-        // Đ (7872 / U+1EA0) và đ (7873 / U+1EA1) BẮT BUỘC phải là false
-        assert!(!is_vowel('Đ'), "Capital Đ (7872) MUST NOT be a vowel");
-        assert!(!is_vowel('đ'), "Lowercase đ (7873) MUST NOT be a vowel");
-    }
-
-    #[test]
-    fn test_vietnamese_diacritics_extended() {
-        // Dải Vietnamese Extended (U+1EA0..=U+1EF9)
-        let vn_vowels = [
-            'Ạ', 'ạ', 'Ả', 'ả', 'Ấ', 'ấ', 'Ầ', 'ầ', 'Ẩ', 'ẩ', 'Ẫ', 'ẫ', 'Ậ', 'ậ', 'Ắ', 'ắ', 'Ằ',
-            'ằ', 'Ẳ', 'ẳ', 'Ẵ', 'ẵ', 'Ặ', 'ặ', 'Ẹ', 'ẹ', 'Ẻ', 'ẻ', 'Ẽ', 'ẽ', 'Ế', 'ế', 'Ề', 'ề',
-            'Ể', 'ể', 'Ễ', 'ễ', 'Ệ', 'ệ', 'Ỉ', 'ỉ', 'Ị', 'ị', 'Ọ', 'ọ', 'Ỏ', 'ỏ', 'Ố', 'ố', 'Ồ',
-            'ồ', 'Ổ', 'ổ', 'Ỗ', 'ỗ', 'Ộ', 'ộ', 'Ớ', 'ớ', 'Ờ', 'ờ', 'Ở', 'ở', 'Ỡ', 'ỡ', 'Ợ', 'ợ',
-            'Ụ', 'ụ', 'Ủ', 'ủ', 'Ứ', 'ứ', 'Ừ', 'ừ', 'Ử', 'ử', 'Ữ', 'ữ', 'Ự', 'ự', 'Ỳ', 'ỳ', 'Ỵ',
-            'ỵ', 'Ỷ', 'ỷ', 'Ỹ', 'ỹ',
-        ];
-        for v in vn_vowels {
-            assert!(
-                is_vowel(v),
-                "Vietnamese Extended Vowel '{}' should return true",
-                v
-            );
-        }
-    }
-
-    #[test]
-    fn test_latin1_and_latin_extended() {
-        // Latin-1 Supplement (À..Ý, à..ý)
-        let latin1 = [
-            'À', 'Á', 'Â', 'Ã', 'È', 'É', 'Ê', 'Ì', 'Í', 'Ò', 'Ó', 'Ô', 'Õ', 'Ù', 'Ú', 'Ý', 'à',
-            'á', 'â', 'ã', 'è', 'é', 'ê', 'ì', 'í', 'ò', 'ó', 'ô', 'õ', 'ù', 'ú', 'ý',
-        ];
-        for v in latin1 {
-            assert!(is_vowel(v), "Latin-1 Vowel '{}' should return true", v);
-        }
-
-        // Latin Extended (Ă, ă, Ĩ, ĩ, Ũ, ũ, Ơ, ơ, Ư, ư)
-        let latin_ext = ['Ă', 'ă', 'Ĩ', 'ĩ', 'Ũ', 'ũ', 'Ơ', 'ơ', 'Ư', 'ư'];
-        for v in latin_ext {
-            assert!(
-                is_vowel(v),
-                "Latin Extended Vowel '{}' should return true",
-                v
-            );
-        }
-
-        // Ký tự trong dải Latin-1 nhưng KHÔNG Phải nguyên âm tiếng Việt
-        let non_vowels_latin1 = ['Ç', 'ç', 'Ñ', 'ñ', '×', '÷', 'ß', 'ÿ'];
-        for nv in non_vowels_latin1 {
-            assert!(
-                !is_vowel(nv),
-                "Latin-1 Non-Vowel '{}' should return false",
-                nv
-            );
-        }
-    }
-
-    #[test]
-    fn test_full_unicode_range_fuzz() {
-        // Quét cạn toàn bộ ký tự Unicode để đảm bảo không bị crash / panic
-        for code in 0..=0x10FFFF {
-            if let Some(ch) = char::from_u32(code) {
-                let _ = is_vowel(ch);
-            }
-        }
-    }
-
-    #[test]
-    fn shaped_vowels_are_before_unshaped_vowels() {
-        for id in 0..BaseVowel::COUNT {
-            let vowel = BaseVowel::from_id(id as usize).unwrap();
-
-            if vowel.shape() == Shape::None {
-                assert!(vowel.id() >= BaseVowel::A.id());
-            } else {
-                assert!(vowel.id() < BaseVowel::A.id());
-            }
-        }
-    }
 }

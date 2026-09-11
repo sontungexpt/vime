@@ -11,35 +11,40 @@ pub use config::{KeyConfig, ShapeMap, ToneMap};
 use super::api::KeyTarget;
 use super::KeyMapping;
 
-/// Configuration-driven interpreter implementation.
+/// Configuration-driven key mapping implementation.
 ///
 /// This is used by input methods whose behavior can be described
-/// declaratively through [`InterpreterConfig`].
+/// declaratively through a [`KeyConfig`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DefaultKeyMapping<'a> {
     config: &'a KeyConfig<'a>,
 }
 
 impl<'a> DefaultKeyMapping<'a> {
+    /// Creates a key mapping from a declarative configuration.
     pub const fn new(config: &'a KeyConfig<'a>) -> Self {
         Self { config }
     }
 
+    /// The Telex input method.
     #[inline(always)]
     pub const fn telex() -> Self {
         Self::new(telex::CONFIG)
     }
 
+    /// The VNI input method.
     #[inline(always)]
     pub const fn vni() -> Self {
         Self::new(vni::CONFIG)
     }
 
+    /// The VIQR input method.
     #[inline(always)]
     pub const fn viqr() -> Self {
         Self::new(viqr::CONFIG)
     }
 
+    /// The underlying configuration.
     #[inline(always)]
     pub const fn config(&self) -> &KeyConfig<'a> {
         self.config
@@ -97,7 +102,7 @@ impl KeyMapping for DefaultKeyMapping<'_> {
         self.config
             .shapes
             .iter()
-            .find(|map| map.key == loinput && map.owner == owner)
+            .find(|map| map.key == loinput && map.vowel == owner)
             .map(|map| map.shape)
     }
 }

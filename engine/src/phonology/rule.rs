@@ -1,12 +1,17 @@
 use super::vowel::BaseVowel;
 
+/// Whether a vowel nucleus is a known Vietnamese sequence.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NucleusStatus {
+    /// The sequence can never form a valid Vietnamese nucleus.
     Dead,
+    /// The sequence is a complete, valid nucleus.
     Valid,
+    /// The sequence is not yet complete but may become valid.
     InComplete,
 }
 
+/// Checks a vowel nucleus (1–3 vowels) against the Vietnamese rule table.
 #[inline]
 pub const fn check_nucleus_validity(vowels: &[BaseVowel]) -> NucleusStatus {
     use BaseVowel::*;

@@ -1,7 +1,7 @@
 use std::mem::transmute;
 use std::str::FromStr;
 
-/// Syllable Coda (Phụ âm cuối)
+/// Syllable Coda — the final consonant cluster of a Vietnamese syllable.
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum Coda {
@@ -22,6 +22,7 @@ impl Coda {
     pub const COUNT: usize = 9;
     pub const MAX_ID: usize = Self::COUNT - 1;
 
+    /// Returns the coda for the given ID, or `Err` if out of range.
     #[inline(always)]
     pub const fn from_id(id: usize) -> Result<Self, ()> {
         if id < Self::COUNT {
@@ -31,6 +32,7 @@ impl Coda {
         }
     }
 
+    /// Returns the coda for the given ASCII bytes, or `Err` for an invalid cluster.
     #[inline(always)]
     pub const fn from_bytes(bytes: &[u8]) -> Result<Self, ()> {
         match bytes {
@@ -47,20 +49,19 @@ impl Coda {
             },
 
             // Two-byte codas ("ch", "ng", "nh")
-            &[first, second] => {
-                let pair = ((first | 0x20) as u16) << 8 | (second | 0x20) as u16;
-
-                match pair {
-                    0x6368 => Ok(Self::Ch), // b"ch"
-                    0x6E67 => Ok(Self::Ng), // b"ng"
-                    0x6E68 => Ok(Self::Nh), // b"nh"
-                    _ => Err(()),
-                }
-            }
+            &[first, second] => match [first | 0x20, second | 0x20] {
+                [b'c', b'h'] => Ok(Self::Ch), // b"ch"
+                [b'n', b'g'] => Ok(Self::Ng), // b"ng"
+                [b'n', b'h'] => Ok(Self::Nh), // b"nh"
+                _ => Err(()),
+            },
 
             _ => Err(()),
         }
     }
+
+    /// Returns the coda for the given ASCII characters, or `Err` for an
+    /// invalid cluster.
     #[inline(always)]
     pub const fn from_chars(chars: &[char]) -> Result<Self, ()> {
         match chars {

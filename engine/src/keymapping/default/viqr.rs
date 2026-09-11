@@ -33,32 +33,32 @@ pub(crate) const CONFIG: &KeyConfig = &KeyConfig::new(
     &[
         ShapeMap {
             key: '^',
-            owner: RootVowel::A,
+            vowel: RootVowel::A,
             shape: Shape::Circumflex,
         },
         ShapeMap {
             key: '^',
-            owner: RootVowel::E,
+            vowel: RootVowel::E,
             shape: Shape::Circumflex,
         },
         ShapeMap {
             key: '^',
-            owner: RootVowel::O,
+            vowel: RootVowel::O,
             shape: Shape::Circumflex,
         },
         ShapeMap {
             key: '(',
-            owner: RootVowel::A,
+            vowel: RootVowel::A,
             shape: Shape::Breve,
         },
         ShapeMap {
             key: '+',
-            owner: RootVowel::O,
+            vowel: RootVowel::O,
             shape: Shape::Horn,
         },
         ShapeMap {
             key: '+',
-            owner: RootVowel::U,
+            vowel: RootVowel::U,
             shape: Shape::Horn,
         },
     ],

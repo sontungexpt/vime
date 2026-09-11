@@ -1,0 +1,72 @@
+//! J. Invalid / dead cases: inputs that leave the parse in a dead status.
+//! The syllable a dead parse renders is not compared, only the `ParseStatus`.
+
+use super::{dead_case, DeadCase};
+
+use vietnamese_engine::renderer::parser::{DeadReason, ParseStatus};
+
+pub const TELEX: &[DeadCase] = &[
+    // ── InvalidOnset ──
+    dead_case!(['b', 'c', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['w', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['q', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)), // q needs u
+    dead_case!(['z', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['j', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['f', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['g', 'r', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(
+        ['n', 'g', 'g', 'a'],
+        ParseStatus::Dead(DeadReason::InvalidOnset)
+    ),
+    // ── InvalidVowelSequence ──
+    dead_case!(
+        ['i', 'e', 'u', 'n'],
+        ParseStatus::Dead(DeadReason::InvalidVowelSequence)
+    ),
+    dead_case!(
+        ['a', 'i', 'u', 'n'],
+        ParseStatus::Dead(DeadReason::InvalidVowelSequence)
+    ),
+    dead_case!(
+        ['a', 'o', 'i', 'u'],
+        ParseStatus::Dead(DeadReason::InvalidVowelSequence)
+    ), // fourth vowel
+    dead_case!(
+        ['b', 'a', 'o', 'i', 'u', 'n'],
+        ParseStatus::Dead(DeadReason::InvalidVowelSequence)
+    ), // fourth vowel after onset
+    // ── InvalidCoda ──
+    dead_case!(['a', 'k', 't'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['a', 'b', 'd'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['a', 'n', 'n'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(
+        ['c', 'h', 'a', 't', 'c'],
+        ParseStatus::Dead(DeadReason::InvalidCoda)
+    ),
+    dead_case!(['a', 'm', 'h'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    // ── InvalidCharacter ──
+    dead_case!(['?'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(
+        ['c', 'h', '?'],
+        ParseStatus::Dead(DeadReason::InvalidCharacter)
+    ),
+    dead_case!(['!'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(['#'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(['a', '?'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(
+        ['a', 'n', 'o'],
+        ParseStatus::Dead(DeadReason::InvalidCharacter)
+    ), // vowel inside a coda
+];
+
+pub const VNI: &[DeadCase] = &[
+    // tone/shape/stroke keys before any vowel are treated as literals in the
+    // onset, which are neither consonants nor vowels → InvalidCharacter
+    dead_case!(['1', 'a'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(['9', 'a'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    dead_case!(['6', 'a'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    // stroke key with no `d` to revert → literal in the vowel phase kills
+    dead_case!(['a', '9'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    // coda-invalid via VNI layout
+    dead_case!(['a', 'b', 'd'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+];

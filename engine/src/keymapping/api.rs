@@ -1,8 +1,11 @@
 use crate::phonology::{BaseVowel, Shape, Tone};
 
+/// What a shape key may be applied to.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KeyTarget {
+    /// A raw character in the buffer.
     Char(char),
+    /// A parsed Vietnamese base vowel.
     BaseVowel(BaseVowel),
 }
 

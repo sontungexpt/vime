@@ -1,11 +1,16 @@
 use crate::phonology::{BaseVowel, Case, Coda, Onset, Tone};
 
+/// A value paired with the letter case used to render it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cased<T> {
     pub value: T,
     pub case: Case,
 }
 
+/// A single Vietnamese syllable under construction.
+///
+/// The raw onset/coda characters are kept alongside their resolved kinds so
+/// the renderer can replay the exact typed letters.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Syllable {
     pub onset: Option<Onset>,

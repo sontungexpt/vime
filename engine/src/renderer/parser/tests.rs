@@ -28,7 +28,7 @@ fn onset_ch() {
     assert_eq!(p.syllable.onset_chars, vec!['c', 'h']);
     assert_eq!(p.phase, ParsePhase::Onset);
 
-    // Khi gặp vowel mới xác nhận onset.
+    // The onset is only resolved once a vowel arrives.
     p.push(BufferChar::Literal('a'));
 
     assert_eq!(p.syllable.onset, Some(Onset::Ch));
@@ -54,13 +54,13 @@ fn onset_qu() {
     p.push(BufferChar::Literal('q'));
     p.push(BufferChar::Literal('u'));
 
-    // "qu" vẫn đang được giữ trong onset.
+    // "qu" is still held in the onset.
     assert_eq!(p.syllable.onset_chars, vec!['q', 'u']);
     assert_eq!(p.phase, ParsePhase::Onset);
 
     p.push(BufferChar::Literal('a'));
 
-    assert_eq!(p.syllable.onset, Some(Onset::QU));
+    assert_eq!(p.syllable.onset, Some(Onset::Qu));
     assert_eq!(p.syllable.vowels.len(), 1);
     assert_eq!(p.syllable.vowels[0].value, BaseVowel::A);
     assert_eq!(p.phase, ParsePhase::Vowel);
@@ -73,13 +73,13 @@ fn onset_gi() {
     p.push(BufferChar::Literal('g'));
     p.push(BufferChar::Literal('i'));
 
-    // Chưa gặp vowel thứ hai nên vẫn chưa promote "gi".
+    // Still no second vowel, so "gi" is not promoted yet.
     assert_eq!(p.syllable.onset, Some(Onset::G));
     assert_eq!(p.syllable.onset_chars, vec!['g']);
     assert_eq!(p.syllable.vowels.len(), 1);
     assert_eq!(p.syllable.vowels[0].value, BaseVowel::I);
 
-    // i + a => promote i thành onset.
+    // i + a => promote the 'i' into the onset.
     p.push(BufferChar::Literal('a'));
 
     assert_eq!(p.syllable.onset, Some(Onset::Gi));

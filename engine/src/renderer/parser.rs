@@ -9,7 +9,11 @@ use crate::{
 };
 
 use super::syllable::{Cased, Syllable};
-// Kiểm tra xem ký tự có phải là kí tự phụ âm ascii
+
+/// Whether `c` is an ASCII consonant character.
+///
+/// Consonants are the ASCII letters minus the vowels `a, e, i, o, u` (and minus
+/// `y`, which the Vietnamese vowel codec owns). `đ` / `Đ` are also onsets.
 #[inline(always)]
 const fn is_ascii_consonant(c: char) -> bool {
     matches!(
@@ -20,39 +24,58 @@ const fn is_ascii_consonant(c: char) -> bool {
     )
 }
 
+/// Outcome of applying a transform key to the current syllable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TransformEffect {
+    /// The transform was applied to the syllable.
     Applied,
+    /// The transform undid an existing mark; the key falls through as a literal.
     Reverted,
+    /// The key could not act as a transform here.
     NotApplicable,
 }
 
+/// The parsing phase the syllable is currently in.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParsePhase {
+    /// Reading the initial consonant(s).
     #[default]
     Onset,
+    /// Reading the vowel nucleus.
     Vowel,
+    /// Reading the final consonant(s).
     Coda,
 }
 
+/// Why a syllable was rejected.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeadReason {
+    /// Unknown / unreachable failure.
     #[default]
     Unknown,
+    /// The consonant cluster is not a valid Vietnamese onset.
     InvalidOnset,
+    /// The vowel nucleus violates the Vietnamese vowel-rule table.
     InvalidVowelSequence,
+    /// The final consonant cluster is not a valid Vietnamese coda.
     InvalidCoda,
-    SpecialBurden, // Các kí tự lạ ? , / , \
+    /// A character that is neither a consonant nor a vowel (`?`, `,`, `/`, …).
+    InvalidCharacter,
 }
 
+/// Overall result of a parse.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParseStatus {
+    /// The syllable is still being built and may become valid.
     #[default]
     Incomplete,
+    /// The syllable is a complete, valid Vietnamese syllable.
     Valid,
+    /// The syllable can never become valid.
     Dead(DeadReason),
 }
 
+/// A point-in-time copy of the parser state, for undo / commit workflows.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct ParseSnapshot {
     phase: ParsePhase,
@@ -60,6 +83,7 @@ pub struct ParseSnapshot {
     status: ParseStatus,
 }
 
+/// Incremental syllable parser driven by a [`KeyMapping`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser<'a, KM: KeyMapping> {
     syllable: Syllable,
@@ -69,6 +93,7 @@ pub struct Parser<'a, KM: KeyMapping> {
 }
 
 impl<'a, KM: KeyMapping> Parser<'a, KM> {
+    /// Creates a parser backed by `mapping`, starting in the `Onset` phase.
     #[inline(always)]
     pub fn new(mapping: &'a KM) -> Self {
         Self {
@@ -79,6 +104,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Returns a copy of the current parser state.
     #[inline(always)]
     pub fn snapshot(&self) -> ParseSnapshot {
         ParseSnapshot {
@@ -88,6 +114,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Clears the syllable and returns the parser to the `Onset` phase.
     #[inline(always)]
     pub fn reset(&mut self) {
         self.syllable = Syllable::default();
@@ -95,32 +122,40 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         self.status = ParseStatus::Incomplete;
     }
 
+    /// Returns the syllable built so far.
     #[inline(always)]
     pub const fn syllable(&self) -> &Syllable {
         &self.syllable
     }
 
+    /// Returns the current parse status.
     #[inline(always)]
     pub const fn status(&self) -> ParseStatus {
         self.status
     }
 
+    /// Returns the phase the parser is currently in.
     #[inline(always)]
     pub const fn phase(&self) -> ParsePhase {
         self.phase
     }
 
+    /// Marks the syllable as dead for `reason`.
     #[inline(always)]
     const fn kill(&mut self, reason: DeadReason) -> ParseStatus {
         self.status = ParseStatus::Dead(reason);
         self.status
     }
 
+    /// Advances the parser to the given phase.
     #[inline(always)]
     const fn set_phase(&mut self, phase: ParsePhase) {
         self.phase = phase;
     }
 
+    /// Pushes one input buffer character and returns the new status.
+    ///
+    /// No character is consumed once the syllable is dead.
     #[inline]
     pub fn push(&mut self, input: BufferChar) -> ParseStatus {
         if let ParseStatus::Dead(_) = self.status {
@@ -134,14 +169,26 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
-    #[inline]
-    pub fn parse(&mut self, chars: &[BufferChar]) -> ParseStatus {
-        for ch in chars {
-            self.push(*ch);
+    /// Pushes a sequence of input characters.
+    ///
+    /// Returns the resulting status and, when the parse is dead, the index of
+    /// the character at which it first died. A parser that was already dead
+    /// before the call yields `None`.
+    pub fn parse(&mut self, chars: &[BufferChar]) -> (ParseStatus, Option<usize>) {
+        if let ParseStatus::Dead(_) = self.status {
+            return (self.status, None);
         }
-        self.status
+
+        for (index, ch) in chars.iter().enumerate() {
+            if let status @ ParseStatus::Dead(_) = self.push(*ch) {
+                return (status, Some(index));
+            }
+        }
+
+        (self.status, None)
     }
 
+    /// Routes an input character to the onset literal / transform handlers.
     #[inline]
     fn push_onset(&mut self, input: BufferChar) -> ParseStatus {
         match input {
@@ -150,32 +197,35 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Handles a literal character while in the `Onset` phase.
+    ///
+    /// Consonants extend the onset. The first vowel opens the nucleus,
+    /// treating a `u` after a lone `q` as the `qu` onset.
     fn push_onset_literal(&mut self, ch: char) -> ParseStatus {
         let syllable = &mut self.syllable;
 
-        // Là phụ âm thì cứ thêm vào
+        // Any ASCII consonant is appended to the onset.
         if is_ascii_consonant(ch) {
             syllable.onset_chars.push(ch);
             return self.status;
         }
-        // Nếu là nguyên âm
+        // Otherwise, if it is a vowel
         else if let Some((base, tone, case)) = decode_vowel(ch) {
             // qu
-            // Nếu gặp nguyên âm u
-            // Chỉ lấy u nếu là ư thì coi như loại
+            // A `u` following a lone `q` is kept as the onset of `qu`.
+            // Only the plain `u` counts here: a precomposed `ư` is a vowel.
             if base == BaseVowel::U
                 && syllable.onset_chars.len() == 1
                 && syllable.onset_chars[0].to_ascii_lowercase() == 'q'
             {
-                // Coi u là một consonant trong trường hợp này
+                // Treat `u` as an onset consonant in this special case.
                 syllable.onset_chars.push(ch);
                 return self.status;
             }
 
-            // Xử lí nguyên âm đầu tiên gặp
+            // Handle the first vowel encountered.
             //
-            // Không có onset cũng hợp lệ:
-            // "a", "ă", "â", ...
+            // A zero onset is also valid: "a", "ă", "â", ...
             if syllable.onset_chars.len() > 0 {
                 match Onset::from_chars(&syllable.onset_chars) {
                     Ok(kind) => {
@@ -192,12 +242,16 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             return self.status;
         }
 
-        // Không phải phụ âm cũng không phải nguyên âm túc là các phím rác khác như ?, /
-        self.kill(DeadReason::SpecialBurden)
+        // Neither a consonant nor a vowel: stray keys such as `?` or `/`.
+        self.kill(DeadReason::InvalidCharacter)
     }
 
+    /// Handles a transform key while in the `Onset` phase.
+    ///
+    /// Only the D-stroke is meaningful here; every other key is treated as a
+    /// literal. A revert undoes the stroke and then falls back to a literal.
     fn push_onset_transform(&mut self, key: char) -> ParseStatus {
-        // Không phải stroke thì coi như key bình thường
+        // Any key that is not a stroke key is treated as an ordinary letter.
         if !self.mapping.stroke(key) {
             return self.push_onset_literal(key);
         }
@@ -207,9 +261,8 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
                 return self.status;
             }
             TransformEffect::Reverted => {
-                // Không phải stroke transform.
-                // Tức là bị undo về và xem như key thường
-                // Ví dụ 'đ' thành 'd' và thêm key vào (trong telex là thêm 'd') thành dd
+                // The stroke was undone, so the key falls back to a literal.
+                // e.g. toggling 'đ' back to 'd' and adding the key gives "dd".
                 return self.push_onset_literal(key);
             }
             TransformEffect::NotApplicable => {
@@ -218,8 +271,8 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
-    /// "gi" + nguyên âm nữa -> chuyển 'i' từ chuỗi nguyên âm về onset,
-    /// lúc này "gi" trở thành phụ âm (Onset::Gi).
+    /// With "gi" followed by another vowel, the 'i' leaves the vowel
+    /// sequence and joins the onset so "gi" becomes the onset `Onset::Gi`.
     #[inline(always)]
     fn resolve_gi_onset(&mut self) -> bool {
         let syllable = &mut self.syllable;
@@ -236,6 +289,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         true
     }
 
+    /// Routes an input character to the vowel literal / transform handlers.
     #[inline]
     fn push_vowel(&mut self, input: BufferChar) -> ParseStatus {
         match input {
@@ -244,13 +298,15 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Appends a precomposed vowel to the nucleus if it does not clash with
+    /// the tone already held by the syllable.
     #[inline(always)]
     fn push_vowel_precomposed(&mut self, base: BaseVowel, tone: Tone, case: Case) -> bool {
         let syllable = &mut self.syllable;
 
-        // Nếu input là precomposed vowel có tone,
-        // không được tạo conflict với tone hiện tại.
-        // Ví dụ đang có á rồi mà dùng kĩ thuật uinput truyền thẳng một kí tự ắ vào buffer
+        // A precomposed vowel carrying a tone must not conflict with the tone
+        // already on the syllable. e.g. "á" is already typed and a raw "ắ" is
+        // pushed straight into the buffer - the two tones would collide.
         if tone != Tone::Flat && syllable.tone != Tone::Flat {
             return false; // push failed
         }
@@ -264,23 +320,27 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         true // push succeeded
     }
 
+    /// Handles a literal character while in the `Vowel` phase.
+    ///
+    /// A vowel is added to the nucleus; a consonant closes the nucleus and
+    /// moves on to the `Coda` phase.
     fn push_vowel_literal(&mut self, ch: char) -> ParseStatus {
         if let Some((base, tone, case)) = decode_vowel(ch) {
             // ---------------------------------------------------------
             // Special case: gi
-            // "gi" chưa quyết định được là gi là onset hay g là onset vì nếu sau i là nguyên âm thì gi là onset
-            // còn không thì g là onset
+            // A syllable prefix of "gi" is ambiguous: if another vowel
+            // follows the 'i', "gi" becomes the onset; otherwise 'g'
+            // stays the onset and the 'i' is the nucleus.
             // ---------------------------------------------------------
             if self.syllable.onset == Some(Onset::G)
-                // Mới chỉ có i là nguyên âm
+                // Only 'i' is in the vowel sequence so far
                 && self.syllable.vowels[0].value == BaseVowel::I
                 && self.syllable.vowels.len() == 1
             {
-                // Phía trước là gi rồi
-                // và theo sau là một nguyên âm nữa thì
-                // lúc này gi sẽ thành phụ âm
+                // "gi" is already typed and another vowel follows,
+                // so "gi" now becomes the onset.
                 if !self.resolve_gi_onset() {
-                    // Không bao giờ failed
+                    // Unreachable in practice
                     return self.kill(DeadReason::Unknown);
                 }
             }
@@ -289,41 +349,39 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             if self.syllable.vowels.len() >= 3 {
                 return self.kill(DeadReason::InvalidVowelSequence);
             }
-            // Thêm nguyên âm mới vào chuỗi nguyên âm
+            // Append the new vowel to the sequence
             else if !self.push_vowel_precomposed(base, tone, case) {
                 return self.kill(DeadReason::InvalidVowelSequence);
             }
 
-            // Hàm này tự xử lí check len rồi
-            // chỉ khi có từ hai nguyên âm đổ lên thì mới thực hiện
-            // Tức là trong lượt mà nó normalize thì chúng ta đang push
-            // nguyên âm thứ 3 vào
+            // `normalize_uo` validates the length itself and only acts once
+            // there are at least two vowels - which is exactly when a third
+            // vowel is being pushed here.
             self.normalize_uo();
 
             return self.status;
         }
 
         // ---------------------------------------------------------
-        // Không phải vowel.
+        // Not a vowel.
         //
-        // Đây là coda → chuyển phase.
+        // A consonant starts the coda - switch phase.
         // ---------------------------------------------------------
         if !is_ascii_consonant(ch) {
-            // Không phải consonant ASCII, coi như là kí tự đặc biệt
-            return self.kill(DeadReason::SpecialBurden);
+            // Not an ASCII consonant: treat it as a special character.
+            return self.kill(DeadReason::InvalidCharacter);
         }
 
-        // Kiểm tra chuỗi nguyên âm hiện tại có chết chưa có khả thi để pass tiếp ko.
-        // Nếu ko valid, coi như dead vì ko thể tạo được nữa do đã kết hợp với coda rồi
-        // Ví dụ 'chơa' + 'c' -> 'chơac' (coda invalid)
+        // An already-dead vowel sequence cannot be rescued once the coda has
+        // started, since the sequence has fused with the coda.
+        // e.g. 'chơa' + 'c' -> 'chơac' (invalid coda).
         if NucleusStatus::Dead == self.validate_nucleus::<3>() {
             return self.kill(DeadReason::InvalidVowelSequence);
         }
 
-        // Hàm này tự xử lí check len rồi
-        // chỉ khi có từ hai nguyên âm đổ lên thì mới thực hiện
-        // Tức là trong lượt mà nó normalize thì chúng ta đang push
-        // một thằng kí tự coda vào
+        // `normalize_uo` validates the length itself and only acts once there
+        // are at least two vowels - which is exactly when a coda character is
+        // being pushed here.
         self.normalize_uo();
 
         self.syllable.coda_chars.push(ch);
@@ -331,6 +389,10 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         self.status
     }
 
+    /// Resolves a tone or D-stroke transform key.
+    ///
+    /// Returns the transform effect, or `None` if the key is neither a tone
+    /// nor a stroke key.
     #[inline(always)]
     fn try_common_transform(&mut self, key: char) -> Option<TransformEffect> {
         // ---------------------------------------------------------
@@ -350,8 +412,11 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         None
     }
 
+    /// Handles a transform key while in the `Vowel` phase.
+    ///
+    /// Tries tones, then the D-stroke, then vowel shapes.
     fn push_vowel_transform(&mut self, key: char) -> ParseStatus {
-        // Some tức là đã có effect hợp lệ tức là key đã chuyển thành tone hoặc stroke
+        // `Some` means the key resolved into a tone or a stroke.
         if let Some(effect) = self.try_common_transform(key) {
             match effect {
                 TransformEffect::Applied => {
@@ -366,12 +431,12 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             }
         }
 
-        // Chưa có effect hợp lệ, check xem có phải shape ko
+        // No tone or stroke effect: try a shape instead.
 
         // ---------------------------------------------------------
         // 2. Shape
         //
-        // Tìm vowel gần nhất có thể nhận shape.
+        // Find the nearest vowel that can take the shape.
         // ---------------------------------------------------------
 
         match self.try_shape_transform(key) {
@@ -382,6 +447,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Routes an input character to the coda literal / transform handlers.
     #[inline]
     fn push_coda(&mut self, input: BufferChar) -> ParseStatus {
         match input {
@@ -390,16 +456,21 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Handles a literal character while in the `Coda` phase.
     fn push_coda_literal(&mut self, ch: char) -> ParseStatus {
+        if self.syllable.coda_chars.len() > Coda::MAX_CODA_LEN {
+            return self.kill(DeadReason::InvalidCoda);
+        }
+
         if !is_ascii_consonant(ch) {
-            // Lúc này nếu có nguyên âm xen giữa coda cũng coi như là key rác
-            // Ví dụ 'tiếnog' thì 'o' xen giữa 'ng' xem là rác
-            return self.kill(DeadReason::SpecialBurden);
+            // A vowel that arrives inside the coda is junk.
+            // e.g. in 'tiếnog', the 'o' between 'n' and 'g' is junk.
+            return self.kill(DeadReason::InvalidCharacter);
         }
 
         self.syllable.coda_chars.push(ch);
 
-        // Check ngay sau khi xem để phát hiện coda chết
+        // Re-validate right away to catch a dead coda.
         match Coda::from_chars(&self.syllable.coda_chars) {
             Ok(kind) => {
                 self.syllable.coda = Some(kind);
@@ -410,6 +481,10 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Handles a transform key while in the `Coda` phase.
+    ///
+    /// Tone, D-stroke and shape transforms are forwarded to the vowel
+    /// handlers; anything else is treated as a literal.
     fn push_coda_transform(&mut self, key: char) -> ParseStatus {
         if let Some(effect) = self.try_common_transform(key) {
             return match effect {
@@ -428,6 +503,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Whether the nucleus starts with an unmarked `u o` pair.
     #[inline(always)]
     fn is_uo_first(&self) -> bool {
         return self.syllable.vowels.len() > 1
@@ -435,14 +511,16 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             && self.syllable.vowels[1].value.root() == RootVowel::O;
     }
 
+    /// Applies a Horn shape to the `u o` prefix (requires at least 2 vowels).
     #[inline]
     fn try_uo_horn(&mut self) -> TransformEffect {
         let vowels = &self.syllable.vowels;
 
         return match (vowels[0].value, vowels[1].value) {
             // ươ -> uow
-            // Bất cứ trường hợp nào cũng revert kể cả có 3 nguyên âm
-            // Ví dụ:
+            //
+            // This always reverts, even with a third vowel.
+            // e.g.:
             //
             //  'ươ' -> 'uow'
             //  'ươu' -> 'uouw'
@@ -466,7 +544,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
                 return TransformEffect::Reverted;
             }
 
-            // ưô -> ươ
+            // ưô -> not applicable
             (BaseVowel::UHorn, BaseVowel::OCircumflex) => {
                 return TransformEffect::NotApplicable;
             }
@@ -492,6 +570,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         };
     }
 
+    /// Applies a Circumflex shape to the `u o` prefix (requires at least 2 vowels).
     #[inline]
     fn try_uo_circumflex(&mut self) -> TransformEffect {
         let vowels = &self.syllable.vowels;
@@ -503,10 +582,11 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             (BaseVowel::UHorn, BaseVowel::OHorn) => {
                 self.syllable.vowels[0].value = BaseVowel::U;
 
-                // Thử thay circumflex vào ơ
+                // Try putting a circumflex on ơ.
                 match self.try_vowel_shape(1, Shape::Circumflex) {
                     TransformEffect::Applied => TransformEffect::Applied,
-                    TransformEffect::Reverted => TransformEffect::Reverted, // Never happen vì ư có shape là horn nên ko thể reverted khi nhấn circumflex
+                    // Cannot happen: ư has the horn shape, so a circumflex never toggles it
+                    TransformEffect::Reverted => TransformEffect::Reverted,
                     TransformEffect::NotApplicable => {
                         // rollback
                         self.syllable.vowels[0].value = first;
@@ -515,7 +595,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
                 }
             }
 
-            // ưô ->
+            // ưô -> not applicable
             (BaseVowel::UHorn, BaseVowel::OCircumflex) => {
                 return TransformEffect::NotApplicable;
             }
@@ -523,10 +603,11 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             // ưo -> uô
             (BaseVowel::UHorn, BaseVowel::O) => {
                 self.syllable.vowels[0].value = BaseVowel::U;
-                // Thử thêm circumflex vào o
+                // Try adding a circumflex to o.
                 match self.try_vowel_shape(1, Shape::Circumflex) {
                     TransformEffect::Applied => TransformEffect::Applied,
-                    TransformEffect::Reverted => TransformEffect::Reverted, // Never happen vì ư có shape là không dấu nên ko thể reverted khi nhấn circumflex
+                    // Cannot happen: a circumflex never toggles the ư on the left
+                    TransformEffect::Reverted => TransformEffect::Reverted,
                     TransformEffect::NotApplicable => {
                         // rollback
                         self.syllable.vowels[0].value = first;
@@ -545,7 +626,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
                 return self.try_vowel_shape(1, Shape::Circumflex);
             }
 
-            // uô -> undo
+            // uô -> undo (revert to "uo")
             (BaseVowel::U, BaseVowel::OCircumflex) => {
                 // Considering if we should do this or not because this case will be revert to ascii by renderer
                 // if vowels.len() == 3 && vowels[2].value != BaseVowel::I
@@ -559,6 +640,10 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         };
     }
 
+    /// Applies or toggles a tone on the syllable.
+    ///
+    /// Tapping the same tone again toggles the syllable back to `Flat`;
+    /// a different tone replaces the current one.
     #[inline(always)]
     fn try_tone(&mut self, tone: Tone) -> TransformEffect {
         let syllable = &mut self.syllable;
@@ -567,17 +652,18 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             return TransformEffect::NotApplicable;
         }
 
-        // Cùng tone → toggle về Flat.
+        // Same tone -> toggle back to Flat.
         if syllable.tone == tone {
             syllable.tone = Tone::Flat;
             return TransformEffect::Reverted;
         }
 
-        // Khác tone → thay tone hiện tại.
+        // Different tone -> replace the current tone.
         syllable.tone = tone;
         TransformEffect::Applied
     }
 
+    /// Toggles the D-stroke on the last onset character.
     #[inline]
     fn try_d_stroke(&mut self) -> TransformEffect {
         for ch in self.syllable.onset_chars.iter_mut().rev() {
@@ -605,6 +691,8 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         TransformEffect::NotApplicable
     }
 
+    /// Tries to apply `key` as a shape transform on the vowel sequence,
+    /// scanning from the last vowel backwards.
     fn try_shape_transform(&mut self, key: char) -> TransformEffect {
         let vseq_len = self.syllable.vowels.len();
 
@@ -615,7 +703,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
                 continue;
             };
 
-            // Xử lí special case liên quan tới u và o
+            // Handle the special u / o cases.
 
             if shape == Shape::Horn && self.is_uo_first() {
                 return self.try_uo_horn();
@@ -624,7 +712,7 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
             }
 
             let effect = self.try_vowel_shape(index, shape);
-            // Chưa thành công thì thử tiếp với các vowel phía trước
+            // If that failed, keep trying the earlier vowels.
             if effect != TransformEffect::NotApplicable {
                 return effect;
             }
@@ -633,45 +721,51 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         TransformEffect::NotApplicable
     }
 
+    /// Validates the vowel nucleus against the rule table, keeping only the
+    /// first `N` vowels.
     #[inline(always)]
     fn validate_nucleus<const N: usize>(&self) -> NucleusStatus {
-        let mut buf = [BaseVowel::A; N]; // Mảng cố định N trên Stack (sửa lỗi mảng động)
+        let mut buf = [BaseVowel::A; N]; // Fixed-size N array on the stack (avoids dynamic allocation)
         let len = self.syllable.vowels.len().min(N);
 
         for (i, v) in self.syllable.vowels.iter().take(len).enumerate() {
             buf[i] = v.value;
         }
 
-        // Cắt slice chính xác theo độ dài thực tế và kiểm tra
+        // Slice exactly the used length and validate.
         check_nucleus_validity(&buf[..len])
     }
 
+    /// Applies `shape` to the vowel at `index`, re-validating the nucleus.
+    ///
+    /// Applying the shape it already has reverts it; an invalid result rolls
+    /// the vowel back.
     #[inline]
     fn try_vowel_shape(&mut self, index: usize, shape: Shape) -> TransformEffect {
         let old = self.syllable.vowels[index].value;
 
         // ---------------------------------------------------------
-        // 1. Undo trước.
+        // 1. Undo first.
         //
-        // Nếu vowel hiện tại đã có đúng shape này thì chắc chắn
-        // state hiện tại đã hợp lệ. Chỉ cần remove shape.
-        // Không cần validate candidate.
+        // When the vowel already has exactly this shape, the state is
+        // guaranteed valid, so the shape can simply be removed without
+        // re-validating the candidate.
         // ---------------------------------------------------------
         if old.shape() == shape && shape != Shape::None {
-            self.syllable.vowels[index].value = old.without_shape();
+            self.syllable.vowels[index].value = old.remove_shape();
             return TransformEffect::Reverted;
         }
 
         let Ok(new) = old.replace_shape(shape) else {
-            // Shape này không tạo được sequence hợp lệ.
-            // Tức là người dùng cố ý tạo shape sai trên mapping ví dụ a + horn
+            // The shape does not form a valid sequence, e.g. the user
+            // deliberately applied a forbidden combo such as a + horn.
             return TransformEffect::NotApplicable;
         };
 
-        // Apply thử.
+        // Try applying the shape.
         self.syllable.vowels[index].value = new;
 
-        // Nếu chỉ có 1 vowel thì không cần validate sequence.
+        // A single vowel needs no sequence validation.
         if self.syllable.vowels.len() < 2 {
             return TransformEffect::Applied;
         }
@@ -686,6 +780,9 @@ impl<'a, KM: KeyMapping> Parser<'a, KM> {
         }
     }
 
+    /// Normalizes an unmarked `u o` prefix that arrived without a shape key.
+    ///
+    /// `uơ → ươ` and `ưo → ươ` are folded once at least two vowels are present.
     #[inline]
     fn normalize_uo(&mut self) {
         let vowels = &self.syllable.vowels;

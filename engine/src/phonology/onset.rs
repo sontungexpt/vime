@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+/// Syllable Onset — the initial consonant cluster of a Vietnamese syllable.
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum Onset {
@@ -24,7 +25,7 @@ pub enum Onset {
     Ngh,
     P,
     Ph,
-    QU,
+    Qu,
     R,
     S,
     T,
@@ -88,7 +89,7 @@ impl Onset {
                 [b'n', b'h'] => Ok(Self::Nh),
                 [b'n', b'g'] => Ok(Self::Ng),
                 [b'p', b'h'] => Ok(Self::Ph),
-                [b'q', b'u'] => Ok(Self::QU),
+                [b'q', b'u'] => Ok(Self::Qu),
                 [b't', b'h'] => Ok(Self::Th),
                 [b't', b'r'] => Ok(Self::Tr),
                 _ => Err(()),

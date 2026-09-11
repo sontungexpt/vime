@@ -11,7 +11,7 @@ pub struct ToneMap {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ShapeMap {
     pub key: char,
-    pub owner: RootVowel,
+    pub vowel: RootVowel,
     pub shape: Shape,
 }
 
@@ -78,7 +78,7 @@ impl<'a> KeyConfig<'a> {
             let mut j = i + 1;
             while j < shapes.len() {
                 if shapes[i].key == shapes[j].key
-                    && (shapes[i].owner as u16) == (shapes[j].owner as u16) {
+                    && (shapes[i].vowel as u16) == (shapes[j].vowel as u16) {
                     panic!("Invalid layout: a shape key applies multiple shapes to one owner");
                 }
                 j += 1;

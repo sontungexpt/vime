@@ -6,28 +6,35 @@ use crate::{
     Syllable,
 };
 
+/// Tone-placement orthography: the modern standard or the pre-1975 "old style".
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Orthography {
+    /// Modern standard orthography ("học sinh" placement).
     #[default]
     Modern,
+    /// Older orthography ("học sinh" placement).
     Old,
 }
 
+/// Renders a syllable to a Vietnamese string using a given tone orthography.
 #[derive(Clone, Copy, Debug)]
 pub struct DefaultRenderer {
     orthography: Orthography,
 }
 
 impl DefaultRenderer {
+    /// Creates a renderer for the given orthography.
     pub const fn new(orthography: Orthography) -> Self {
         Self { orthography }
     }
 
+    /// Returns the orthography this renderer uses.
     #[inline(always)]
     pub const fn orthography(&self) -> Orthography {
         self.orthography
     }
 
+    /// Modern orthography: tone position with the newer placement rules.
     #[inline]
     fn tone_position_modern(&self, syllable: &Syllable) -> Option<usize> {
         let vowels = &syllable.vowels;
@@ -114,6 +121,7 @@ impl DefaultRenderer {
         Some(position)
     }
 
+    /// Old orthography: tone position with the older placement rules.
     #[inline]
     fn tone_position_old(&self, syllable: &Syllable) -> Option<usize> {
         let vowels = &syllable.vowels;
@@ -178,6 +186,7 @@ impl DefaultRenderer {
         }
     }
 
+    /// Index of the tone-bearing vowel, per the configured orthography.
     #[inline]
     fn tone_position(&self, syllable: &Syllable) -> Option<usize> {
         match self.orthography {
@@ -194,6 +203,8 @@ impl Default for DefaultRenderer {
 }
 
 impl Renderer for DefaultRenderer {
+    /// Renders the syllable as a Vietnamese string, placing the tone on the
+    /// tone-bearing vowel and leaving the rest unmarked.
     fn render(&self, syllable: &Syllable) -> String {
         let capacity =
             syllable.onset_chars.len() + syllable.vowels.len() + syllable.coda_chars.len();

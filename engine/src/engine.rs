@@ -9,6 +9,8 @@ mod api;
 
 pub use api::InputEngine;
 
+/// The core input method state machine: buffers raw keystrokes and renders
+/// them into Vietnamese text.
 pub struct Engine<R: Renderer, I: KeyMapping> {
     config: Config,
     keystrokes: Buffer,
@@ -21,30 +23,36 @@ where
     R: Renderer,
     I: KeyMapping + Clone,
 {
+    /// The engine configuration.
     pub fn config(&self) -> &Config {
         &self.config
     }
 
+    /// The raw keystroke buffer.
     pub fn keystrokes(&self) -> &Buffer {
         &self.keystrokes
     }
 
+    /// Renders the current buffer as Vietnamese text, or as the raw ASCII
+    /// keystrokes when the buffer cannot form a valid syllable.
     pub fn rendered(&self) -> String {
         let mut parser = Parser::new(&self.mapping);
-        parser.parse(self.keystrokes.chars());
+        let (status, _) = parser.parse(self.keystrokes.chars());
 
-        if let ParseStatus::Dead(_) = parser.status() {
+        if let ParseStatus::Dead(_) = status {
             return self.keystrokes.to_string();
         }
 
         self.renderer.render(parser.syllable())
     }
 
+    /// Clears the buffer.
     pub fn reset(&mut self) -> Result {
         self.keystrokes.clear();
         Result::Changed
     }
 
+    /// Feeds one input into the engine.
     pub fn input(&mut self, input: Input) -> Result {
         match input {
             Input::Character(character) => self.insert(character),
@@ -57,6 +65,7 @@ where
         }
     }
 
+    /// Commits the current buffer and returns the resulting text.
     pub fn commit(&mut self) -> Result {
         self.commit_with_suffix("")
     }
@@ -138,6 +147,7 @@ where
 }
 
 impl Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
+    /// Creates a Telex engine with the given configuration.
     pub fn new(config: Config) -> Self {
         Self {
             config,
