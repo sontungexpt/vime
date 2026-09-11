@@ -40,6 +40,7 @@
 //! | `tones_shapes`   | tone + shape combinations                     |
 //! | `uo_sequences`   | the `uo` / `ươ` special cycles                |
 //! | `vni`            | the VNI layout                                |
+//! | `viqr`           | the VIQr layout                               |
 //! | `precomposed`    | precomposed Vietnamese vowel input            |
 //! | `uppercase`      | uppercase input                               |
 //! | `toggles`       | toggle / revert behaviour                     |
@@ -51,8 +52,7 @@
 //! never silently shrinks.
 
 use vietnamese_engine::{
-    renderer::parser::ParseStatus,
-    DefaultKeyMapping, DefaultRenderer, Parser, Renderer,
+    renderer::parser::ParseStatus, DefaultKeyMapping, DefaultRenderer, Parser, Renderer,
 };
 
 pub mod dead_cases;
@@ -66,6 +66,7 @@ pub mod tones_shapes;
 pub mod uo_sequences;
 pub mod uppercase;
 pub mod vni;
+pub mod viqr;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test data types

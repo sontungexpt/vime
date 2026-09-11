@@ -13,7 +13,7 @@ mod corpus;
 
 use corpus::{
     dead_cases, onsets, precomposed, run_all, run_all_dead, syllables, telex_shapes,
-    telex_tones, toggles, tones_shapes, uo_sequences, uppercase, vni,
+    telex_tones, toggles, tones_shapes, uo_sequences, uppercase, vni, viqr,
 };
 
 use vietnamese_engine::DefaultKeyMapping;
@@ -31,7 +31,7 @@ fn telex_corpus() {
         + run_all(toggles::CASES, &telex)
         + run_all(syllables::CASES, &telex);
     assert!(
-        n >= 300,
+        n >= 430,
         "expected the telex corpus to stay large; got {n} cases"
     );
 }
@@ -40,7 +40,14 @@ fn telex_corpus() {
 fn vni_corpus() {
     let vni = DefaultKeyMapping::vni();
     let n = run_all(vni::CASES, &vni);
-    assert!(n >= 40, "expected at least 40 VNI cases; got {n}");
+    assert!(n >= 55, "expected at least 55 VNI cases; got {n}");
+}
+
+#[test]
+fn viqr_corpus() {
+    let viqr = DefaultKeyMapping::viqr();
+    let n = run_all(viqr::CASES, &viqr);
+    assert!(n >= 55, "expected at least 55 VIQr cases; got {n}");
 }
 
 #[test]
@@ -48,5 +55,5 @@ fn dead_corpus() {
     let telex = DefaultKeyMapping::telex();
     let vni = DefaultKeyMapping::vni();
     let n = run_all_dead(dead_cases::TELEX, &telex) + run_all_dead(dead_cases::VNI, &vni);
-    assert!(n >= 25, "expected at least 25 dead cases; got {n}");
+    assert!(n >= 30, "expected at least 30 dead cases; got {n}");
 }

@@ -14,6 +14,8 @@ pub const CASES: &[TestCase] = &[
     case!(['C', 'H', 'A'], "CHA"),
     case!(['D', 'D', 'A'], "ĐA"),
     case!(['Q', 'U', 'A'], "QUA"),
+    case!(['B', 'A', 'N'], "BAN"),
+    case!(['C', 'H', 'U', 'Y'], "CHUY"),
     // ── shapes ──
     case!(['A', 'W'], "Ă"),
     case!(['A', 'A'], "Â"),
@@ -26,6 +28,12 @@ pub const CASES: &[TestCase] = &[
     case!(['A', 'A', 'S'], "Ấ"),
     case!(['U', 'W', 'S'], "Ứ"),
     case!(['O', 'W', 'S'], "Ớ"),
+    case!(['A', 'W', 'R'], "Ẳ"),
+    case!(['A', 'A', 'X'], "Ẫ"),
+    case!(['O', 'W', 'R'], "Ở"),
+    case!(['O', 'W', 'X'], "Ỡ"),
+    case!(['U', 'W', 'F'], "Ừ"),
+    case!(['U', 'W', 'J'], "Ự"),
     // ── tones on uppercase vowels ──
     case!(['A', 'S'], "Á"),
     case!(['A', 'F'], "À"),
@@ -34,6 +42,10 @@ pub const CASES: &[TestCase] = &[
     case!(['A', 'J'], "Ạ"),
     case!(['E', 'F'], "È"),
     case!(['U', 'S'], "Ú"),
+    case!(['E', 'R'], "Ẻ"),
+    case!(['O', 'O', 'F'], "Ồ"),
+    case!(['O', 'O', 'X'], "Ỗ"),
+    case!(['Y', 'F'], "Ỳ"),
     // uppercase `Y` is a vowel, tone applies to it
     case!(['Y', 'S'], "Ý"),
     // ── uppercase precomposed stays uppercase ──
@@ -41,6 +53,11 @@ pub const CASES: &[TestCase] = &[
     case!(['Ằ'], "Ằ"),
     case!(['Ấ'], "Ấ"),
     case!(['Ệ'], "Ệ"),
+    case!(['Đ'], "Đ"),
+    case!(['Ầ'], "Ầ"),
+    case!(['Ị'], "Ị"),
+    case!(['Ử'], "Ử"),
+    case!(['Ỗ'], "Ỗ"),
     // ── uppercase precomposed transforms ──
     case!(['Ắ', 'f'], "Ằ"),
     case!(['Ắ', 's'], "Ăs"),

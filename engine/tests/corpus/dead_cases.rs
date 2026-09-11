@@ -14,6 +14,11 @@ pub const TELEX: &[DeadCase] = &[
     dead_case!(['j', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
     dead_case!(['f', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
     dead_case!(['g', 'r', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['t', 'r', 'g', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(
+        ['k', 'h', 'h', 'a'],
+        ParseStatus::Dead(DeadReason::InvalidOnset)
+    ),
     dead_case!(
         ['n', 'g', 'g', 'a'],
         ParseStatus::Dead(DeadReason::InvalidOnset)
@@ -44,6 +49,9 @@ pub const TELEX: &[DeadCase] = &[
         ParseStatus::Dead(DeadReason::InvalidCoda)
     ),
     dead_case!(['a', 'm', 'h'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['a', 'n', 'g', 'g'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['a', 't', 'c'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['o', 'n', 'm'], ParseStatus::Dead(DeadReason::InvalidCoda)),
     // ── InvalidCharacter ──
     dead_case!(['?'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
     dead_case!(
@@ -69,4 +77,6 @@ pub const VNI: &[DeadCase] = &[
     dead_case!(['a', '9'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
     // coda-invalid via VNI layout
     dead_case!(['a', 'b', 'd'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    // flat-reset key lands as a literal inside the vowel phase
+    dead_case!(['a', '0'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
 ];

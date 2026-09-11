@@ -16,6 +16,7 @@ pub const CASES: &[TestCase] = &[
     case!(['à', 'r'], "ả"),
     case!(['ả', 'x'], "ã"),
     case!(['ã', 'j'], "ạ"),
+    case!(['ả', 'f'], "à"),
     // ── tone → same tone (Reverted + literal spill) ──
     case!(['a', 's', 's'], "as"),
     case!(['á', 's'], "as"),
@@ -27,6 +28,14 @@ pub const CASES: &[TestCase] = &[
     case!(['a', 'w', 'w'], "aw"),
     case!(['ă', 'w'], "aw"),
     case!(['â', 'a'], "aa"),
+    case!(['ô', 'o'], "oo"),
+    case!(['ê', 'e'], "ee"),
+    case!(['ơ', 'w'], "ow"),
+    case!(['ư', 'w'], "uw"),
+    // ── tone → same tone (Reverted + literal spill) ──
+    case!(['ẻ', 'r'], "er"),
+    case!(['õ', 'x'], "ox"),
+    case!(['ị', 'j'], "ij"),
     // ── shape → different shape (Applied) ──
     case!(['a', 'a'], "â"),
     case!(['â', 'w'], "ă"),

@@ -1,0 +1,85 @@
+//! F2. The VIQr layout.
+//!
+//! VIQr layout (config/keymapping/default/viqr.rs):
+//!   tones `` ` `` (grave), `?` (hook), `~` (tilde), `'` (acute), `.` (dot),
+//!   `z` (flat reset)
+//!   shapes `^` = circumflex (a e o), `(` = breve (a), `+` = horn (o u)
+//!   stroke `d` = d → đ
+
+use super::{case, TestCase};
+
+pub const CASES: &[TestCase] = &[
+    // ── tones ──
+    case!(['a', '\''], "á"),
+    case!(['a', '`'], "à"),
+    case!(['a', '?'], "ả"),
+    case!(['a', '~'], "ã"),
+    case!(['a', '.'], "ạ"),
+    case!(['e', '\''], "é"),
+    case!(['e', '`'], "è"),
+    case!(['o', '?'], "ỏ"),
+    case!(['u', '~'], "ũ"),
+    case!(['i', '.'], "ị"),
+    case!(['y', '?'], "ỷ"),
+    case!(['y', '`'], "ỳ"),
+    // ── tone reset with `z` ──
+    case!(['á', 'z'], "a"),
+    case!(['ấ', 'z'], "â"),
+    // ── tone replacement ──
+    case!(['a', '\'', '`'], "à"),
+    // ── tone after a coda ──
+    case!(['a', 'n', '\''], "án"),
+    case!(['a', 'm', '`'], "àm"),
+    case!(['a', 't', '.'], "ạt"),
+    // ── shapes ──
+    case!(['a', '^'], "â"),
+    case!(['a', '('], "ă"),
+    case!(['e', '^'], "ê"),
+    case!(['o', '^'], "ô"),
+    case!(['o', '+'], "ơ"),
+    case!(['u', '+'], "ư"),
+    // ── shape then tone ──
+    case!(['a', '^', '\''], "ấ"),
+    case!(['a', '^', '?'], "ẩ"),
+    case!(['a', '(', '\''], "ắ"),
+    case!(['a', '(', '.'], "ặ"),
+    case!(['o', '^', '.'], "ộ"),
+    case!(['o', '+', '\''], "ớ"),
+    case!(['o', '+', '?'], "ở"),
+    case!(['u', '+', '\''], "ứ"),
+    case!(['u', '+', '~'], "ữ"),
+    // ── tone then shape keeps the tone ──
+    case!(['a', '\'', '^'], "ấ"),
+    // ── `d` stroke ──
+    case!(['d', 'd'], "đ"),
+    case!(['d', 'd', 'a'], "đa"),
+    case!(['d', 'd', 'a', '\''], "đá"),
+    case!(['D', 'd'], "Đ"),
+    // ── qu ──
+    case!(['q', 'u', 'a'], "qua"),
+    case!(['q', 'u', 'a', '\''], "quá"),
+    case!(['q', 'u', 'y'], "quy"),
+    // ── uo / ươ ──
+    case!(['u', 'o', '+'], "uơ"),
+    case!(['u', 'o', '+', 'i'], "ươi"),
+    case!(['u', 'o', '+', 'i', '\''], "ưới"),
+    case!(['u', 'o', '^', 'i'], "uôi"),
+    // ── precomposed vowel sequences ──
+    case!(['ư', 'a'], "ưa"),
+    case!(['t', 'h', 'ư', 'a', '?'], "thửa"),
+    // ── real syllables ──
+    case!(['n', 'g', 'u', 'o', '+', 'i', '`'], "người"),
+    case!(['n', 'u', 'o', '+', 'c', '\''], "nước"),
+    case!(['d', 'd', 'u', 'o', '+', 'c', '.'], "được"),
+    case!(['q', 'u', 'y', 'e', '^', 't', '\''], "quyết"),
+    case!(['h', 'o', 'i', '?'], "hỏi"),
+    case!(['d', 'd', 'e', '^', 'n', '\''], "đến"),
+    case!(['v', 'i', 'e', '^', 't', '.'], "việt"),
+    case!(['t', 'h', 'a', 'n', 'h', '`'], "thành"),
+    case!(['s', 'o', 'n', 'g'], "song"),
+    case!(['x', 'i', 'n', 'h'], "xinh"),
+    case!(['t', 'h', 'u', 'e', '^', '\''], "thuế"),
+    case!(['t', 'h', 'u', 'e', '^'], "thuê"),
+    case!(['h', 'o', 'a', '(', 'c', '.'], "hoặc"),
+    case!(['k', 'h', 'o', 'e', '?'], "khoẻ"),
+];

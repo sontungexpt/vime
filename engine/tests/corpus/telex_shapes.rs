@@ -26,8 +26,19 @@ pub const CASES: &[TestCase] = &[
     // ── o/w interplay outside uo context (single vowel) ──
     case!(['o', 'w'], "ơ"),
     case!(['o', 'w', 'o'], "ô"),
+    // ── o/w interplay: circumflex replaced by the horn on a second key ──
+    case!(['o', 'o', 'w'], "ơ"),
     // ── shape toggles ──
     case!(['a', 'w', 'w'], "aw"),
     case!(['e', 'e', 'e'], "ee"),
     case!(['o', 'o', 'o'], "oo"),
+    case!(['u', 'w', 'w'], "uw"),
+    case!(['o', 'w', 'w'], "ow"),
+    // ── shapes in front of onsets / codas ──
+    case!(['k', 'e', 'e'], "kê"),
+    case!(['c', 'h', 'e', 'e'], "chê"),
+    case!(['t', 'h', 'e', 'e'], "thê"),
+    case!(['n', 'g', 'a', 'w'], "ngă"),
+    case!(['d', 'd', 'a', 'w'], "đă"),
+    case!(['b', 'u', 'w', 'n'], "bưn"),
 ];

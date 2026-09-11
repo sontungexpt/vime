@@ -58,6 +58,9 @@ pub const CASES: &[TestCase] = &[
     case!(['d', 'd', 'a'], "đa"),
     // qu keeps `u` as a consonant inside the onset
     case!(['q', 'u', 'a'], "qua"),
+    case!(['q', 'u', 'e'], "que"),
+    case!(['q', 'u', 'i'], "qui"),
+    case!(['q', 'u', 'o'], "quo"),
     // ── vowel sequences without onset ──
     case!(['a', 'i'], "ai"),
     case!(['a', 'o'], "ao"),
@@ -69,4 +72,14 @@ pub const CASES: &[TestCase] = &[
     case!(['u', 'y'], "uy"),
     case!(['o', 'a'], "oa"),
     case!(['o', 'e'], "oe"),
+    case!(['e', 'u'], "eu"),
+    case!(['i', 'u'], "iu"),
+    case!(['i', 'e'], "ie"),
+    case!(['o', 'i'], "oi"),
+    case!(['ư', 'u'], "ưu"),
+    // ── ngh onset ──
+    case!(['n', 'g', 'h', 'e'], "nghe"),
+    case!(['n', 'g', 'h', 'i'], "nghi"),
+    // ── đ standalone ──
+    case!(['d', 'd'], "đ"),
 ];

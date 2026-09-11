@@ -49,6 +49,9 @@ pub const CASES: &[TestCase] = &[
     case!(['a', 'n', 's'], "án"),
     case!(['b', 'a', 'c', 'j'], "bạc"),
     case!(['t', 'o', 'a', 'n', 'j'], "toạn"),
+    case!(['a', 'm', 'f'], "àm"),
+    case!(['a', 'p', 'j'], "ạp"),
+    case!(['a', 't', 'j'], "ạt"),
     // ── tone on two-vowel nuclei (flat placement on the first) ──
     case!(['a', 'i', 's'], "ái"),
     case!(['o', 'i', 's'], "ói"),
@@ -57,6 +60,23 @@ pub const CASES: &[TestCase] = &[
     case!(['a', 'y', 's'], "áy"),
     case!(['u', 'a', 's'], "úa"),
     case!(['i', 'a', 's'], "ía"),
+    case!(['o', 'i', 'r'], "ỏi"),
+    case!(['a', 'y', 'r'], "ảy"),
+    case!(['a', 'u', 'r'], "ảu"),
+    case!(['a', 'i', 'x'], "ãi"),
+    case!(['i', 'a', 'x'], "ĩa"),
+    case!(['u', 'a', 'j'], "ụa"),
+    case!(['b', 'u', 'i', 'j'], "bụi"),
+    // ── `u y` places the tone on the first letter ──
+    case!(['u', 'y', 's'], "úy"),
+    case!(['u', 'y', 'f'], "ùy"),
+    case!(['u', 'y', 'r'], "ủy"),
+    case!(['u', 'y', 'x'], "ũy"),
+    case!(['u', 'y', 'j'], "ụy"),
+    // ── `oa` / `oe` place the tone on the second letter ──
+    case!(['o', 'a', 's'], "oá"),
+    case!(['o', 'e', 'f'], "oè"),
+    case!(['x', 'o', 'e', 'f'], "xoè"),
     // ── tone replacement ──
     case!(['a', 's', 'f'], "à"),
     case!(['a', 'f', 'r'], "ả"),
