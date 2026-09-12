@@ -1,5 +1,5 @@
 use crate::{
-    keymapping::{KeyMapping, KeyTarget},
+    rule_engine::{RuleEngine, TransfromTarget},
     phonology::{
         decode_vowel,
         rule::{self, check_nucleus_validity, NucleusStatus},
@@ -83,16 +83,16 @@ pub struct ParseSnapshot {
     status: ParseStatus,
 }
 
-/// Incremental syllable parser driven by a [`KeyMapping`].
+/// Incremental syllable parser driven by a [`RuleEngine`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Parser<KM: KeyMapping> {
+pub struct Parser<KM: RuleEngine> {
     syllable: Syllable,
     phase: ParsePhase,
     status: ParseStatus,
     mapping: KM,
 }
 
-impl<KM: KeyMapping> Parser<KM> {
+impl<KM: RuleEngine> Parser<KM> {
     /// Creates a parser backed by `mapping`, starting in the `Onset` phase.
     #[inline(always)]
     pub fn new(mapping: KM) -> Self {
@@ -198,7 +198,7 @@ impl<KM: KeyMapping> Parser<KM> {
 
     #[inline(always)]
     fn push_onset(&mut self, input: char) -> ParseStatus {
-        if self.mapping.is_transform(input) {
+        if self.mapping.is_rule_key(input) {
             return self.push_onset_transform(input);
         }
 
@@ -280,7 +280,7 @@ impl<KM: KeyMapping> Parser<KM> {
         // Telex/VNI doubling keys (`aa`, `oo`, `ee`, ...) and tone keys
         // (`s`, `f`, `r`, `x`, `j`, digits) are themselves vowels or ASCII
         // consonants, so the transform check must come first here.
-        if self.mapping.is_transform(input) {
+        if self.mapping.is_rule_key(input) {
             return self.push_vowel_transform(input);
         }
 
@@ -425,7 +425,7 @@ impl<KM: KeyMapping> Parser<KM> {
     fn push_coda(&mut self, input: char) -> ParseStatus {
         // Telex tone keys (`s`, `f`, `r`, `x`, `j`) and the `d` stroke are
         // ASCII consonants, so the transform check must come first here.
-        if self.mapping.is_transform(input) {
+        if self.mapping.is_rule_key(input) {
             return self.push_coda_transform(input);
         }
 
@@ -657,7 +657,7 @@ impl<KM: KeyMapping> Parser<KM> {
         for index in (0..vseq_len).rev() {
             let base = self.syllable.vowels[index].value;
 
-            let Some(shape) = self.mapping.shape(key, KeyTarget::BaseVowel(base)) else {
+            let Some(shape) = self.mapping.shape(key, TransfromTarget::BaseVowel(base)) else {
                 continue;
             };
 

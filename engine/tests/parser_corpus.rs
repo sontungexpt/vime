@@ -12,15 +12,15 @@
 mod corpus;
 
 use corpus::{
-    dead_cases, onsets, precomposed, run_all, run_all_dead, syllables, telex_shapes,
-    telex_tones, toggles, tones_shapes, uo_sequences, uppercase, vni, viqr,
+    dead_cases, onsets, precomposed, run_all, run_all_dead, syllables, telex_shapes, telex_tones,
+    toggles, tones_shapes, uo_sequences, uppercase, viqr, vni,
 };
 
-use vime_engine::DefaultKeyMapping;
+use vime_engine::ConfiguredRuleEngine;
 
 #[test]
 fn telex_corpus() {
-    let telex = DefaultKeyMapping::telex();
+    let telex = ConfiguredRuleEngine::telex();
     let n = run_all(onsets::CASES, &telex)
         + run_all(telex_tones::CASES, &telex)
         + run_all(telex_shapes::CASES, &telex)
@@ -38,22 +38,22 @@ fn telex_corpus() {
 
 #[test]
 fn vni_corpus() {
-    let vni = DefaultKeyMapping::vni();
+    let vni = ConfiguredRuleEngine::vni();
     let n = run_all(vni::CASES, &vni);
     assert!(n >= 55, "expected at least 55 VNI cases; got {n}");
 }
 
 #[test]
 fn viqr_corpus() {
-    let viqr = DefaultKeyMapping::viqr();
+    let viqr = ConfiguredRuleEngine::viqr();
     let n = run_all(viqr::CASES, &viqr);
     assert!(n >= 55, "expected at least 55 VIQr cases; got {n}");
 }
 
 #[test]
 fn dead_corpus() {
-    let telex = DefaultKeyMapping::telex();
-    let vni = DefaultKeyMapping::vni();
+    let telex = ConfiguredRuleEngine::telex();
+    let vni = ConfiguredRuleEngine::vni();
     let n = run_all_dead(dead_cases::TELEX, &telex) + run_all_dead(dead_cases::VNI, &vni);
     assert!(n >= 30, "expected at least 30 dead cases; got {n}");
 }

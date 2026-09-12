@@ -31,12 +31,12 @@ pub enum Shape {
 pub enum Tone {
     /// No tone.
     #[default]
-    Flat = 0, // Level
-    Acute = 1, // Sharp rising
-    Grave = 2, // Deep falling
-    Hook = 3,  // Asking / slanted
-    Tilde = 4, // Wavy broken
-    Dot = 5,   // Heavy
+    Flat = 0,
+    Acute = 1,
+    Grave = 2,
+    Hook = 3,
+    Tilde = 4,
+    Dot = 5,
 }
 
 impl Tone {

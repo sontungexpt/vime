@@ -1,12 +1,10 @@
 use std::ffi::{c_char, CString};
 use std::ptr;
-use vime_engine::{
-    DefaultKeyMapping, DefaultRenderer, Engine, Key, KeyEvent, KeyState, Result,
-};
+use vime_engine::{ConfiguredRuleEngine, DefaultRenderer, Engine, Key, KeyEvent, KeyState, Result};
 
 #[repr(C)]
 pub struct VimeEngineHandle {
-    engine: Engine<DefaultRenderer, DefaultKeyMapping<'static>>,
+    engine: Engine<DefaultRenderer, ConfiguredRuleEngine<'static>>,
 }
 
 #[repr(C)]
@@ -116,8 +114,8 @@ pub unsafe extern "C" fn vime_process_key(
 pub unsafe extern "C" fn vime_set_method(engine: *mut VimeEngineHandle, method: u32) {
     if let Some(engine) = engine.as_mut() {
         engine.engine.set_layout(match method {
-            1 => DefaultKeyMapping::telex(), // VIME_INPUT_METHOD_TELEX
-            2 => DefaultKeyMapping::vni(),   // VIME_INPUT_METHOD_VNI
+            1 => ConfiguredRuleEngine::telex(), // VIME_INPUT_METHOD_TELEX
+            2 => ConfiguredRuleEngine::vni(),   // VIME_INPUT_METHOD_VNI
             _ => return,
         });
     }
@@ -136,7 +134,7 @@ pub unsafe extern "C" fn vime_free_string(value: *mut c_char) {
 }
 
 fn output(
-    engine: &Engine<DefaultRenderer, DefaultKeyMapping<'static>>,
+    engine: &Engine<DefaultRenderer, ConfiguredRuleEngine<'static>>,
     result: Result,
 ) -> VimeOutput {
     let mut output = VimeOutput::empty();

@@ -66,10 +66,8 @@ impl Coda {
     pub const fn from_chars(chars: &[char]) -> Result<Self, ()> {
         match chars {
             [] => Ok(Self::None),
-            &[c] if c.is_ascii_alphabetic() => Self::from_bytes(&[c as u8]),
-            &[c0, c1] if c0.is_ascii_alphabetic() && c1.is_ascii_alphabetic() => {
-                Self::from_bytes(&[c0 as u8, c1 as u8])
-            }
+            &[c] if c.is_ascii() => Self::from_bytes(&[c as u8]),
+            &[c0, c1] if c0.is_ascii() && c1.is_ascii() => Self::from_bytes(&[c0 as u8, c1 as u8]),
             _ => Err(()),
         }
     }

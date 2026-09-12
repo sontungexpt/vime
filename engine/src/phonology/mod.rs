@@ -1,5 +1,4 @@
 pub mod coda;
-pub mod config;
 pub mod onset;
 pub mod rule;
 pub mod vowel;

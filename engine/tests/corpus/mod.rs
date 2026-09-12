@@ -3,7 +3,7 @@
 //! The real pipeline under test is:
 //!
 //! ```text
-//! KeyMapping → Parser::push() → Syllable → Renderer
+//! RuleEngine → Parser::push() → Syllable → Renderer
 //! ```
 //!
 //! Every case lists the *exact* order in which characters are pushed; the
@@ -51,9 +51,7 @@
 //! (`parser_corpus.rs`); they sum the per-module counts and assert the corpus
 //! never silently shrinks.
 
-use vime_engine::{
-    DefaultKeyMapping, DefaultRenderer, ParseStatus, Parser, Renderer,
-};
+use vime_engine::{ConfiguredRuleEngine, DefaultRenderer, ParseStatus, Parser, Renderer};
 
 pub mod dead_cases;
 pub mod onsets;
@@ -65,8 +63,8 @@ pub mod toggles;
 pub mod tones_shapes;
 pub mod uo_sequences;
 pub mod uppercase;
-pub mod vni;
 pub mod viqr;
+pub mod vni;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test data types
@@ -108,7 +106,7 @@ pub(crate) use dead_case;
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Pushes every character in order, then renders the resulting syllable.
-pub fn run_case(case: &TestCase, mapping: &DefaultKeyMapping<'_>) {
+pub fn run_case(case: &TestCase, mapping: &ConfiguredRuleEngine<'_>) {
     let mut parser = Parser::new(*mapping);
 
     for &ch in case.input {
@@ -133,7 +131,7 @@ pub fn run_case(case: &TestCase, mapping: &DefaultKeyMapping<'_>) {
 /// Pushes every character in order and asserts the parser ends up in the
 /// expected (dead) status. The syllable that a dead parse renders is not
 /// compared, only the `ParseStatus`.
-pub fn run_dead(case: &DeadCase, mapping: &DefaultKeyMapping<'_>) {
+pub fn run_dead(case: &DeadCase, mapping: &ConfiguredRuleEngine<'_>) {
     let mut parser = Parser::new(*mapping);
 
     for &ch in case.input {
@@ -153,7 +151,7 @@ pub fn run_dead(case: &DeadCase, mapping: &DefaultKeyMapping<'_>) {
 }
 
 /// Runs every case in a corpus slice and returns how many were executed.
-pub fn run_all<'a>(cases: &'a [TestCase], mapping: &DefaultKeyMapping<'a>) -> usize {
+pub fn run_all<'a>(cases: &'a [TestCase], mapping: &ConfiguredRuleEngine<'a>) -> usize {
     for case in cases {
         run_case(case, mapping);
     }
@@ -161,7 +159,7 @@ pub fn run_all<'a>(cases: &'a [TestCase], mapping: &DefaultKeyMapping<'a>) -> us
 }
 
 /// Runs every dead case in a corpus slice and returns how many were executed.
-pub fn run_all_dead<'a>(cases: &'a [DeadCase], mapping: &DefaultKeyMapping<'a>) -> usize {
+pub fn run_all_dead<'a>(cases: &'a [DeadCase], mapping: &ConfiguredRuleEngine<'a>) -> usize {
     for case in cases {
         run_dead(case, mapping);
     }

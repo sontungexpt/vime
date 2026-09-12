@@ -1,62 +1,62 @@
-use super::{InputLayout, ShapeMapping, ToneMapping};
+use super::{ShapeRule, ToneRule, TypingRules};
 use crate::{RootVowel, Shape, Tone};
 
 /// VNI layout: shapes on `6` (circumflex), `7` (breve/horn), `8` (horn),
 /// `9` (stroke); tones on `1-5` and `0`.
-pub(crate) const CONFIG: &InputLayout = &InputLayout::new(
+pub(crate) const CONFIG: &TypingRules = &TypingRules::new(
     &[
-        ToneMapping {
+        ToneRule {
             key: '1',
             tone: Tone::Acute,
         },
-        ToneMapping {
+        ToneRule {
             key: '2',
             tone: Tone::Grave,
         },
-        ToneMapping {
+        ToneRule {
             key: '3',
             tone: Tone::Hook,
         },
-        ToneMapping {
+        ToneRule {
             key: '4',
             tone: Tone::Tilde,
         },
-        ToneMapping {
+        ToneRule {
             key: '5',
             tone: Tone::Dot,
         },
-        ToneMapping {
+        ToneRule {
             key: '0',
             tone: Tone::Flat,
         },
     ],
     &[
-        ShapeMapping {
+        ShapeRule {
             key: '6',
             vowel: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeMapping {
+        ShapeRule {
             key: '7',
             vowel: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeMapping {
+        ShapeRule {
             key: '6',
             vowel: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeMapping {
+        ShapeRule {
             key: '6',
             vowel: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeMapping {
+        ShapeRule {
             key: '7',
             vowel: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeMapping {
+        ShapeRule {
             key: '8',
             vowel: RootVowel::U,
             shape: Shape::Horn,

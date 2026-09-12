@@ -1,6 +1,6 @@
 //! F. The VNI layout.
 //!
-//! VNI layout (config/keymapping/default/vni.rs):
+//! VNI layout (config/rule_engine/default/vni.rs):
 //!   tones 1..=5 = acute/grave/hook/tilde/dot, 0 = flat reset
 //!   shapes 6 = circumflex (a e o), 7 = breve(a) / horn(o), 8 = horn(u)
 //!   stroke 9 = d → đ

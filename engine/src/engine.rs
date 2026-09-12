@@ -1,14 +1,14 @@
 use crate::{
     event::{Key, KeyEvent},
     parser::ParseStatus,
-    Buffer, Config, DefaultKeyMapping, DefaultRenderer, KeyMapping, Parser, Renderer, Result,
+    Buffer, Config, ConfiguredRuleEngine, DefaultRenderer, Parser, Renderer, Result, RuleEngine,
 };
 
 const SUFFIX_SPACE: &str = " ";
 
 /// The core input method state machine: buffers raw keystrokes and renders
 /// them into Vietnamese text.
-pub struct Engine<R: Renderer, KM: KeyMapping> {
+pub struct Engine<R: Renderer, KM: RuleEngine> {
     config: Config,
     keystrokes: Buffer,
     renderer: R,
@@ -18,7 +18,7 @@ pub struct Engine<R: Renderer, KM: KeyMapping> {
 impl<R, KM> Engine<R, KM>
 where
     R: Renderer,
-    KM: KeyMapping + Copy,
+    KM: RuleEngine + Copy,
 {
     /// The engine configuration.
     pub fn config(&self) -> &Config {
@@ -129,20 +129,20 @@ where
     }
 }
 
-impl Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
+impl Engine<DefaultRenderer, ConfiguredRuleEngine<'static>> {
     /// Creates a Telex engine with the given configuration.
     pub fn new(config: Config) -> Self {
         Self {
             config,
             keystrokes: Buffer::new(),
             renderer: DefaultRenderer::default(),
-            mapping: DefaultKeyMapping::telex(),
+            mapping: ConfiguredRuleEngine::telex(),
         }
     }
 
     /// Creates an engine using `layout` with the default configuration.
     #[inline(always)]
-    pub fn with_layout(layout: DefaultKeyMapping<'static>) -> Self {
+    pub fn with_layout(layout: ConfiguredRuleEngine<'static>) -> Self {
         Self {
             config: Config::default(),
             keystrokes: Buffer::new(),
@@ -152,7 +152,7 @@ impl Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
     }
 }
 
-impl Default for Engine<DefaultRenderer, DefaultKeyMapping<'static>> {
+impl Default for Engine<DefaultRenderer, ConfiguredRuleEngine<'static>> {
     fn default() -> Self {
         Self::new(Config::default())
     }

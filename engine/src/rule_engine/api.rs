@@ -2,7 +2,7 @@ use crate::phonology::{BaseVowel, Shape, Tone};
 
 /// What a shape key may be applied to.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum KeyTarget {
+pub enum TransfromTarget {
     /// A raw character in the buffer.
     Char(char),
     /// A parsed Vietnamese base vowel.
@@ -10,9 +10,9 @@ pub enum KeyTarget {
 }
 
 /// Interprets keyboard input into semantic Vietnamese actions.
-pub trait KeyMapping {
+pub trait RuleEngine {
     /// Returns whether `input` is configured as a tone, shape, or stroke key.
-    fn is_transform(&self, input: char) -> bool;
+    fn is_rule_key(&self, input: char) -> bool;
 
     /// Interprets `input` as a tone key, returning the configured [`Tone`].
     fn tone(&self, input: char) -> Option<Tone>;
@@ -22,5 +22,5 @@ pub trait KeyMapping {
 
     /// Interprets `input` as a shape key for `target`, returning the
     /// configured [`Shape`].
-    fn shape(&self, input: char, target: KeyTarget) -> Option<Shape>;
+    fn shape(&self, input: char, target: TransfromTarget) -> Option<Shape>;
 }

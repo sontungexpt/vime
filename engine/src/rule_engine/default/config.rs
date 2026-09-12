@@ -2,27 +2,27 @@ use crate::{RootVowel, Shape, Tone};
 
 /// A keyboard key mapped to a Vietnamese tone.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ToneMapping {
+pub struct ToneRule {
     pub key: char,
     pub tone: Tone,
 }
 
 /// A keyboard key mapped to a Vietnamese vowel shape.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ShapeMapping {
+pub struct ShapeRule {
     pub key: char,
     pub vowel: RootVowel,
     pub shape: Shape,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct InputLayout<'a> {
-    pub tones: &'a [ToneMapping],
-    pub shapes: &'a [ShapeMapping],
+pub struct TypingRules<'a> {
+    pub tones: &'a [ToneRule],
+    pub shapes: &'a [ShapeRule],
     pub strokes: &'a [char],
 }
 
-impl<'a> InputLayout<'a> {
+impl<'a> TypingRules<'a> {
     /// Creates a config, validating the key maps against these rules:
     ///
     /// 1. **Tone key uniqueness** — a tone key must be unique across all
@@ -44,11 +44,7 @@ impl<'a> InputLayout<'a> {
     ///
     /// Violations panic, so when invoked in a constant context a bad layout
     /// fails to compile.
-    pub const fn new(
-        tones: &'a [ToneMapping],
-        shapes: &'a [ShapeMapping],
-        strokes: &'a [char],
-    ) -> Self {
+    pub const fn new(tones: &'a [ToneRule], shapes: &'a [ShapeRule], strokes: &'a [char]) -> Self {
         // Rule 1: a tone key cannot map to two tones.
         let mut i = 0;
         while i < tones.len() {

@@ -6,23 +6,23 @@ mod telex;
 mod viqr;
 mod vni;
 
-pub use config::{InputLayout, ShapeMapping, ToneMapping};
+pub use config::{ShapeRule, ToneRule, TypingRules};
 
-use super::api::KeyTarget;
-use super::KeyMapping;
+use super::api::TransfromTarget;
+use super::RuleEngine;
 
 /// Configuration-driven key mapping implementation.
 ///
 /// This is used by input methods whose behavior can be described
-/// declaratively through a [`InputLayout`].
+/// declaratively through a [`TypingRules`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct DefaultKeyMapping<'a> {
-    config: &'a InputLayout<'a>,
+pub struct ConfiguredRuleEngine<'a> {
+    config: &'a TypingRules<'a>,
 }
 
-impl<'a> DefaultKeyMapping<'a> {
+impl<'a> ConfiguredRuleEngine<'a> {
     /// Creates a key mapping from a declarative configuration.
-    pub const fn new(config: &'a InputLayout<'a>) -> Self {
+    pub const fn new(config: &'a TypingRules<'a>) -> Self {
         Self { config }
     }
 
@@ -46,15 +46,15 @@ impl<'a> DefaultKeyMapping<'a> {
 
     /// The underlying configuration.
     #[inline(always)]
-    pub const fn config(&self) -> &InputLayout<'a> {
+    pub const fn config(&self) -> &TypingRules<'a> {
         self.config
     }
 }
 
-impl KeyMapping for DefaultKeyMapping<'_> {
+impl RuleEngine for ConfiguredRuleEngine<'_> {
     /// Returns whether `key` is configured as a tone, shape, or stroke key.
     #[inline(always)]
-    fn is_transform(&self, key: char) -> bool {
+    fn is_rule_key(&self, key: char) -> bool {
         let key = key.to_ascii_lowercase();
 
         self.config.tones.iter().any(|map| map.key == key)
@@ -80,7 +80,7 @@ impl KeyMapping for DefaultKeyMapping<'_> {
     }
 
     #[inline(always)]
-    fn shape(&self, input: char, target: KeyTarget) -> Option<Shape> {
+    fn shape(&self, input: char, target: TransfromTarget) -> Option<Shape> {
         let loinput = input.to_ascii_lowercase();
 
         // Only vowel families are shapeable. Resolve the target into a
@@ -90,13 +90,13 @@ impl KeyMapping for DefaultKeyMapping<'_> {
         // Anything else — `d`/`đ`, `x`, `q`, `1`, arbitrary Unicode — matches
         // no shape key and passes through.
         let owner = match target {
-            KeyTarget::Char(c) => {
+            TransfromTarget::Char(c) => {
                 let Some((base, _, _)) = decode_vowel(c) else {
                     return None;
                 };
                 base.root()
             }
-            KeyTarget::BaseVowel(base) => base.root(),
+            TransfromTarget::BaseVowel(base) => base.root(),
         };
 
         self.config

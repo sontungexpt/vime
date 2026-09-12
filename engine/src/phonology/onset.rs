@@ -108,14 +108,12 @@ impl Onset {
         match chars {
             [] => Ok(Self::None),
             &['đ'] | &['Đ'] => Ok(Self::Đ),
-            &[character] if character.is_ascii_alphabetic() => Self::from_bytes(&[character as u8]),
-            &[first, second] if first.is_ascii_alphabetic() && second.is_ascii_alphabetic() => {
+            &[character] if character.is_ascii() => Self::from_bytes(&[character as u8]),
+            &[first, second] if first.is_ascii() && second.is_ascii() => {
                 Self::from_bytes(&[first as u8, second as u8])
             }
             &[first, second, third]
-                if first.is_ascii_alphabetic()
-                    && second.is_ascii_alphabetic()
-                    && third.is_ascii_alphabetic() =>
+                if first.is_ascii() && second.is_ascii() && third.is_ascii() =>
             {
                 Self::from_bytes(&[first as u8, second as u8, third as u8])
             }

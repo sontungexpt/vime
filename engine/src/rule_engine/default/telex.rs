@@ -1,62 +1,62 @@
-use super::{InputLayout, ShapeMapping, ToneMapping};
+use super::{ShapeRule, ToneRule, TypingRules};
 use crate::{RootVowel, Shape, Tone};
 
 /// Telex layout: shapes on `a/e/o` (circumflex), `w` (breve/horn), `d`
 /// (stroke); tones on `s/f/r/x/j/z`.
-pub(crate) const CONFIG: &InputLayout = &InputLayout::new(
+pub(crate) const CONFIG: &TypingRules = &TypingRules::new(
     &[
-        ToneMapping {
+        ToneRule {
             key: 's',
             tone: Tone::Acute,
         },
-        ToneMapping {
+        ToneRule {
             key: 'f',
             tone: Tone::Grave,
         },
-        ToneMapping {
+        ToneRule {
             key: 'r',
             tone: Tone::Hook,
         },
-        ToneMapping {
+        ToneRule {
             key: 'x',
             tone: Tone::Tilde,
         },
-        ToneMapping {
+        ToneRule {
             key: 'j',
             tone: Tone::Dot,
         },
-        ToneMapping {
+        ToneRule {
             key: 'z',
             tone: Tone::Flat,
         },
     ],
     &[
-        ShapeMapping {
+        ShapeRule {
             key: 'a',
             vowel: RootVowel::A,
             shape: Shape::Circumflex,
         },
-        ShapeMapping {
+        ShapeRule {
             key: 'w',
             vowel: RootVowel::A,
             shape: Shape::Breve,
         },
-        ShapeMapping {
+        ShapeRule {
             key: 'e',
             vowel: RootVowel::E,
             shape: Shape::Circumflex,
         },
-        ShapeMapping {
+        ShapeRule {
             key: 'o',
             vowel: RootVowel::O,
             shape: Shape::Circumflex,
         },
-        ShapeMapping {
+        ShapeRule {
             key: 'w',
             vowel: RootVowel::O,
             shape: Shape::Horn,
         },
-        ShapeMapping {
+        ShapeRule {
             key: 'w',
             vowel: RootVowel::U,
             shape: Shape::Horn,
