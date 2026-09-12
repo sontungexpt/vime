@@ -1,5 +1,5 @@
 [package]
-name = "vietnamese-fcitx5"
+name = "vime-fcitx5"
 version = "0.1.0"
 edition = "2021"
 description = "Rust backend ABI for the Vietnamese Fcitx5 adapter"

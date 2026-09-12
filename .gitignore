@@ -3,3 +3,4 @@ target/
 build/
 fcitx5-lotus/
 bamboo-core/
+compile_commands.json
