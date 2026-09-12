@@ -71,4 +71,14 @@ pub const CASES: &[TestCase] = &[
     case!(['N', 'H', 'A'], "NHA"),
     // ── expansion: uppercase shapes + vowel ──
     case!(['Y', 'E', 'E', 'U'], "YÊU"),
+    // ── expansion: uppercase real syllables ──
+    case!(['N', 'G', 'U', 'O', 'W', 'I', 'F'], "NGƯỜI"),
+    case!(['T', 'R', 'U', 'O', 'W', 'N', 'G'], "TRƯƠNG"),
+    case!(['V', 'I', 'E', 'E', 'T', 'S'], "VIẾT"),
+    case!(['D', 'D', 'U', 'O', 'W', 'C', 'J'], "ĐƯỢC"),
+    case!(['Q', 'U', 'A', 'S'], "QUÁ"),
+    case!(['K', 'H', 'O', 'O', 'I'], "KHÔI"),
+    case!(['M', 'A', 'A', 'Y'], "MÂY"),
+    case!(['C', 'A', 'A', 'Y'], "CÂY"),
+    case!(['D', 'D', 'A', 'A', 'S', 'Y'], "ĐẤY"),
 ];

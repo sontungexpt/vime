@@ -97,6 +97,14 @@ pub const TELEX: &[DeadCase] = &[
         ['c', 'h', '0'],
         ParseStatus::Dead(DeadReason::InvalidCharacter)
     ),
+    // ── expansion ──
+    // InvalidOnset: invalid consonant clusters
+    dead_case!(['b', 'd', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['m', 'n', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    // InvalidCoda: doubled consonant codas
+    dead_case!(['a', 't', 't'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['a', 'k', 'k'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['o', 'n', 'm'], ParseStatus::Dead(DeadReason::InvalidCoda)),
 ];
 
 pub const VNI: &[DeadCase] = &[
@@ -116,4 +124,11 @@ pub const VNI: &[DeadCase] = &[
     dead_case!(['7', 'a'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
     // second stroke with no `d` to revert → literal kills the syllable
     dead_case!(['d', '9', '9'], ParseStatus::Dead(DeadReason::InvalidCharacter)),
+    // ── expansion ──
+    // InvalidOnset: invalid consonant clusters in the VNI layout too
+    dead_case!(['b', 'c', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    dead_case!(['w', 'a'], ParseStatus::Dead(DeadReason::InvalidOnset)),
+    // InvalidCoda: doubled consonant codas
+    dead_case!(['a', 't', 't'], ParseStatus::Dead(DeadReason::InvalidCoda)),
+    dead_case!(['a', 'k', 'k'], ParseStatus::Dead(DeadReason::InvalidCoda)),
 ];

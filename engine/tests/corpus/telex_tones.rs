@@ -101,4 +101,15 @@ pub const CASES: &[TestCase] = &[
     case!(['a', 'o', 'j'], "ạo"),
     // ── expansion: `iêu` / `yếu`-style three-vowel tones ──
     case!(['i', 'e', 'u', 'f'], "ièu"),
+    // ── expansion: tones on plain vowel sequences ──
+    case!(['b', 'a', 'y', 's'], "báy"),
+    case!(['c', 'h', 'o', 'a', 'y', 'j'], "choạy"),
+    case!(['m', 'ư', 'a', 'r'], "mửa"),
+    case!(['n', 'ư', 'a', 'f'], "nừa"),
+    case!(['o', 'a', 'n', 'f'], "oàn"),
+    case!(['o', 'a', 's'], "oá"),
+    case!(['i', 'ê', 'u', 's'], "iếu"),
+    case!(['ư', 'ơ', 'n', 's'], "ướn"),
+    case!(['b', 'o', 'a', 'y', 's'], "boáy"),
+    case!(['t', 'i', 'u', 'f'], "tìu"),
 ];

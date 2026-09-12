@@ -84,4 +84,22 @@ pub const CASES: &[TestCase] = &[
     case!(['m', 'ù', 'a'], "mùa"),
     case!(['c', 'h', 'ơ'], "chơ"),
     case!(['t', 'h', 'ô'], "thô"),
+    // ── expansion: more single precomposed vowels ──
+    case!(['ò'], "ò"),
+    case!(['ó'], "ó"),
+    case!(['ú'], "ú"),
+    case!(['ù'], "ù"),
+    case!(['ị'], "ị"),
+    case!(['ọ'], "ọ"),
+    case!(['ẽ'], "ẽ"),
+    case!(['ỉ'], "ỉ"),
+    case!(['ĩ'], "ĩ"),
+    // ── expansion: tone replacement on precomposed vowels ──
+    case!(['ầ', 's'], "ấ"),
+    case!(['ề', 's'], "ế"),
+    case!(['ừ', 'j'], "ự"),
+    case!(['ă', 'f'], "ằ"),
+    case!(['ê', 'r'], "ể"),
+    case!(['ô', 'r'], "ổ"),
+    case!(['ư', 'a', 's'], "ứa"),
 ];

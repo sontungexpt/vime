@@ -57,4 +57,9 @@ pub const CASES: &[TestCase] = &[
     case!(['u', 'o', 'w', 'w', 'w'], "uow"),
     // ── tone on a literal that is a tone key in onset: `s` becomes onset ──
     case!(['s'], "s"),
+    // ── expansion: more revert spills ──
+    case!(['o', 's', 's'], "os"),
+    case!(['i', 'x', 'x'], "ix"),
+    case!(['u', 'r', 'r'], "ur"),
+    case!(['o', 's', 'r'], "ỏ"),
 ];

@@ -52,4 +52,8 @@ pub const CASES: &[TestCase] = &[
     // ── expansion: more uông tones ──
     case!(['u', 'o', 'o', 'n', 'g', 'x'], "uỗng"),
     case!(['u', 'o', 'o', 'n', 'g', 'j'], "uộng"),
+    // ── expansion: bare ươ nuclei ──
+    case!(['u', 'o', 'w', 'n', 'g'], "ương"),
+    case!(['u', 'o', 'w', 't', 'j'], "ượt"),
+    case!(['u', 'o', 'w', 'c', 'f'], "ườc"),
 ];

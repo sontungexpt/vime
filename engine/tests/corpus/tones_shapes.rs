@@ -61,4 +61,11 @@ pub const CASES: &[TestCase] = &[
     // ── expansion: tones on shaped nuclei with a coda ──
     case!(['b', 'a', 'w', 'n', 's'], "bắn"),
     case!(['b', 'a', 'a', 'n', 'f'], "bần"),
+    // ── expansion: tone + shape + coda syllables ──
+    case!(['o', 'a', 'w', 't', 's'], "oắt"),
+    case!(['l', 'o', 'a', 'w', 't', 's'], "loắt"),
+    case!(['t', 'h', 'o', 'o', 'i', 's'], "thối"),
+    case!(['d', 'd', 'a', 'a', 'u', 'r'], "đẩu"),
+    case!(['c', 'u', 'o', 'o', 'n', 'j'], "cuộn"),
+    case!(['b', 'a', 'a', 'y', 's'], "bấy"),
 ];
