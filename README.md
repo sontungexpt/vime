@@ -3,7 +3,7 @@
 Vime is organized as three independent projects:
 
 - `engine/`: standalone Vietnamese input-method core
-- `fcitx5/`: Fcitx5 adapter and addon
+- `vime-fcitx5/`: Fcitx5 adapter and addon
 - `nvim/`: Neovim integration
 
 Each directory is an independent Cargo project with its own lockfile.
@@ -11,7 +11,7 @@ Each directory is an independent Cargo project with its own lockfile.
 ```text
                  ┌─────────────────────────────────────────────┐
                  │              FRONTENDS (independent crates) │
-                 │       fcitx5/  ·  nvim/                     │
+                 │       vime-fcitx5/  ·  nvim/                     │
                  └──────────────────────┬──────────────────────┘
                                         │ Input
                                         ▼
@@ -53,7 +53,7 @@ together for a frontend.
 | `state.rs`                | `composition`                                         | engine                           |
 | `input.rs` / `result.rs`  | —                                                    | engine                           |
 | `engine.rs`               | composition · config · interpreter · input · result · state | lib (public API)            |
-| `lib.rs`                  | all of the above (re-exports the public surface)      | `fcitx5/` · `nvim/`               |
+| `lib.rs`                  | all of the above (re-exports the public surface)      | `vime-fcitx5/` · `nvim/`               |
 
 ### One keystroke end to end
 
@@ -82,7 +82,7 @@ together for a frontend.
 - `engine`: standalone Vietnamese input-method core — `Engine`, `Composition`,
   layout-independent `Interpreter`/`Processor` split, Telex + VNI configs,
   `decode_vowel`/`encode_vowel` codec, syllable normalize and render.
-- `fcitx5`: C ABI backend plus native C++ Fcitx5 adapter.
+- `vime-fcitx5`: C ABI backend plus native C++ Fcitx5 adapter.
 - `nvim`: Lua entry point and optional Rust support library.
 
 ## Core usage
@@ -110,7 +110,7 @@ printf 'aas ' | (cd engine && cargo run --example vietnamese-cli)
 
 ## Fcitx5 integration
 
-Fcitx5 addons use a C++ ABI. The adapter in `fcitx5/native/vime.cpp` is installed as
+Fcitx5 addons use a C++ ABI. The adapter in `vime-fcitx5/native/vime.cpp` is installed as
 `vime.so`, subclasses `fcitx::InputMethodEngine`, implements `keyEvent`,
 `activate`, `reset`, and `listInputMethods`, and exports
 `fcitx_addon_factory_instance` with `FCITX_ADDON_FACTORY`.

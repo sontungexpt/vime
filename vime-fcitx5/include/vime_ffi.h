@@ -27,15 +27,18 @@ typedef uint32_t VimeKey;
 #define VIME_KEY_TAB               7u
 #define VIME_KEY_SPACE             8u
 
-/* Key event state matches fcitx5 KeyState bit positions exactly. */
-#define VIME_KEY_STATE_SHIFT     (1u << 0)
-#define VIME_KEY_STATE_CAPS_LOCK (1u << 1)
-#define VIME_KEY_STATE_CTRL      (1u << 2)
-#define VIME_KEY_STATE_ALT       (1u << 3)
-#define VIME_KEY_STATE_NUM_LOCK  (1u << 4)
-#define VIME_KEY_STATE_HYPER     (1u << 5)
-#define VIME_KEY_STATE_SUPER     (1u << 6)
-#define VIME_KEY_STATE_META      (1u << 28)
+/* Key event state — vime-engine's canonical KeyState bitmask. The bits are
+   owned by the engine crate (see event.rs) and are independent of any
+   frontend's modifier model; frontends must translate their own native
+   modifier state into these values. */
+#define VIME_KEY_STATE_CTRL      (1u << 0)
+#define VIME_KEY_STATE_ALT       (1u << 1)
+#define VIME_KEY_STATE_SHIFT     (1u << 2)
+#define VIME_KEY_STATE_SUPER     (1u << 3)
+#define VIME_KEY_STATE_CAPS_LOCK (1u << 4)
+#define VIME_KEY_STATE_NUM_LOCK  (1u << 5)
+#define VIME_KEY_STATE_HYPER     (1u << 6)
+#define VIME_KEY_STATE_META      (1u << 7)
 
 typedef struct VimeKeyEvent {
     VimeKey key;
@@ -51,9 +54,10 @@ VimeEngineHandle *vime_create(void);
 void vime_destroy(VimeEngineHandle *);
 VimeOutput vime_reset(VimeEngineHandle *);
 
-VimeOutput vime_process_key(VimeEngineHandle *, VimeKeyEvent event);
 
-void vime_set_method(VimeEngineHandle *, VimeInputMethod method);
+VimeOutput vime_process_key(VimeEngineHandle *, VimeKeyEvent event);
+void vime_set_input_method(VimeEngineHandle *, VimeInputMethod method);
+
 void vime_free_string(char *);
 
 #ifdef __cplusplus

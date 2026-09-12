@@ -111,7 +111,10 @@ pub unsafe extern "C" fn vime_process_key(
 /// # Safety
 ///
 /// `engine` must be null or a valid engine pointer.
-pub unsafe extern "C" fn vime_set_method(engine: *mut VimeEngineHandle, method: u32) {
+pub unsafe extern "C" fn vime_set_input_method(
+    engine: *mut VimeEngineHandle,
+    method: u32,
+) {
     if let Some(engine) = engine.as_mut() {
         engine.engine.set_layout(match method {
             1 => ConfiguredRuleEngine::telex(), // VIME_INPUT_METHOD_TELEX

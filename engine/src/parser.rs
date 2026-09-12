@@ -1,10 +1,10 @@
 use crate::{
-    rule_engine::{RuleEngine, TransfromTarget},
     phonology::{
         decode_vowel,
         rule::{self, check_nucleus_validity, NucleusStatus},
         BaseVowel, Case, Coda, Onset, Shape, Tone,
     },
+    rule_engine::{RuleEngine, TransfromTarget},
     RootVowel,
 };
 
@@ -224,24 +224,23 @@ impl<KM: RuleEngine> Parser<KM> {
             self.syllable.onset_chars.push(input);
             return self.status;
         } else if let Some((base, tone, case)) = decode_vowel(input) {
-            let syllable = &mut self.syllable;
+            let onset_chars = &self.syllable.onset_chars;
+            let onset_len = onset_chars.len();
 
             // qu
             // A `u` following a lone `q` is kept as the onset of `qu`.
             // Only the plain `u` counts here: a precomposed `ư` is an actual vowel.
-            if base == BaseVowel::U
-                && syllable.onset_chars.len() == 1
-                && syllable.onset_chars[0].to_ascii_lowercase() == 'q'
+            if onset_len == 1 && base == BaseVowel::U && onset_chars[0].to_ascii_lowercase() == 'q'
             {
-                syllable.onset_chars.push(input);
+                self.syllable.onset_chars.push(input);
                 return self.status;
             }
 
             // A zero onset is also valid: "a", "ă", "â", ...
-            if syllable.onset_chars.len() > 0 {
-                match Onset::from_chars(&syllable.onset_chars) {
+            if onset_len > 0 {
+                match Onset::from_chars(&onset_chars) {
                     Ok(kind) => {
-                        syllable.onset = Some(kind);
+                        self.syllable.onset = Some(kind);
                     }
                     Err(_) => return self.kill(DeadReason::InvalidOnset),
                 }
