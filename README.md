@@ -7,7 +7,7 @@ management:
 vime/                      # adapters repo (this one)
 ├── engine/                # vime-engine git repo — core + C ABI
 │   ├── core/              #   pure Rust Vietnamese input-method core
-│   └── ffi/               #   C ABI boundary (vime.h, libvime.so / libvime.a)
+│   └── ffi/               #   C ABI boundary (vime_engine.h, libvime.so / libvime.a)
 ├── adapters/
 │   ├── fcitx5/            # native C++ Fcitx5 adapter plugin
 │   └── nvim/              # Neovim integration

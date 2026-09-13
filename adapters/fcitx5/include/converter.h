@@ -1,11 +1,13 @@
 #pragma once
 
-#include "vime.h"
+#include "vime_engine.h"
 
 #include <fcitx-utils/key.h>
 #include <fcitx-utils/keysym.h>
 
 #include <optional>
+
+using namespace vime::engine;
 
 namespace vime::fcitx5 {
 

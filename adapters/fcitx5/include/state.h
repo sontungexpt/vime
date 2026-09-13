@@ -1,9 +1,11 @@
 #pragma once
 
-#include "vime.h"
+#include "vime_engine.h"
 #include <fcitx/inputcontext.h>
 #include <fcitx/inputcontextproperty.h>
 #include <fcitx-utils/key.h>
+
+using namespace vime::engine;
 
 namespace vime::fcitx5 {
 
