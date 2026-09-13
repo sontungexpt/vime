@@ -1,15 +1,18 @@
 # Vietnamese Fcitx5 Adapter
 
-Native Fcitx5 adapter plugin for Vime. Core Vietnamese engine logic is in `../../engine`, exposed via C ABI in `../../ffi`.
+Native Fcitx5 adapter plugin for Vime. Vietnamese engine logic lives in the
+`vime-engine` companion repo at `../../vime-engine` (`engine` crate), exposed
+via the C ABI in `../../vime-engine/ffi`.
 
-The native C++ addon in `fcitx5.cpp` implements `fcitx::InputMethodEngine`; the `ffi` crate provides the C ABI backend.
+The native C++ addon implements `fcitx::InputMethodEngine`; the `ffi` crate
+provides the C ABI backend (`libvime.so`).
 
 ## Build
 
 Build the Rust FFI crate:
 
 ```sh
-cargo build --release --manifest-path ../../ffi/Cargo.toml
+cargo build --release --manifest-path ../../vime-engine/ffi/Cargo.toml
 ```
 
 Build and install the Fcitx5 addon:

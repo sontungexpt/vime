@@ -17,9 +17,9 @@ if(NOT DEFINED FCITX_INSTALL_PKGDATADIR)
     set(FCITX_INSTALL_PKGDATADIR "share/fcitx5")
 endif()
 
-set(FFI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../ffi")
+set(FFI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../vime-engine/ffi")
 set(RUST_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/rust-target")
-set(RUST_BACKEND "${RUST_TARGET_DIR}/release/libvime_ffi.so")
+set(RUST_BACKEND "${RUST_TARGET_DIR}/release/libvime.so")
 
 add_custom_command(
     OUTPUT "${RUST_BACKEND}"
@@ -44,7 +44,7 @@ target_include_directories(vime PRIVATE
 )
 add_dependencies(vime vime-ffi-backend)
 target_link_directories(vime PRIVATE "${RUST_TARGET_DIR}/release")
-target_link_libraries(vime PRIVATE Fcitx5::Core Fcitx5::Utils vime_ffi)
+target_link_libraries(vime PRIVATE Fcitx5::Core Fcitx5::Utils "${RUST_BACKEND}")
 set_target_properties(vime PROPERTIES PREFIX "")
 set_target_properties(vime PROPERTIES INSTALL_RPATH "$ORIGIN")
 

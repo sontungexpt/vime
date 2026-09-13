@@ -2,9 +2,9 @@
 #include <fcitx/addonfactory.h>
 #include <fcitx/addonmanager.h>
 
-namespace vime::fcitx5 {
+FCITX_DEFINE_LOG_CATEGORY(vimeLog, "vime");
 
-FCITX_DEFINE_LOG_CATEGORY(vime, "vime");
+namespace vime::fcitx5 {
 
 class VimeFactory final : public fcitx::AddonFactory {
 public:

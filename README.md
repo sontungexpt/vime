@@ -1,57 +1,43 @@
 # Vime Vietnamese Input Method
 
-Vime is organized into modular layers:
+Vime is organized into two repositories that live in one project for easy
+management:
 
-- `engine/`: standalone pure Rust Vietnamese input-method core engine
-- `ffi/`: C ABI boundary exposing public C headers (`vime.h`) and types/conversions
-- `adapters/`: native platform and IME framework adapters
-  - `adapters/fcitx5/`: native C++ Fcitx5 adapter plugin
-
-```text
-vime/
-├── ffi/                   # [C ABI Boundary] Tầng tiếp xúc với C/C++ Frontend
-│   ├── include/
-│   │   └── vime.h         # Header file C công khai cho C/C++ Frontend
-│   └── src/
-│       ├── lib.rs         # C-FFI entry points (vime_create, vime_process_key,...)
-│       ├── types.rs       # C-compatible structs/enums (VimeOutput, VimeKeyEvent,...)
-│       ├── convert.rs     # Chuyển đổi giữa C-Types <-> Rust Domain Types
-│       └── logging.rs     # Bridge chuyển log từ Rust `log` crate sang C Callback
-│
-├── engine/                # [Pure Rust Engine] Core xử lý dấu, quy tắc tiếng Việt
-│   ├── src/
-│   │   ├── lib.rs
-│   │   ├── engine.rs      # Engine điều phối chính (State Machine)
-│   │   ├── composition/   # Quản lý chuỗi đang gõ (Preedit buffer)
-│   │   ├── rule_engine/   # Luật gõ Telex, VNI, VIQR,...
-│   │   ├── phonology/     # Cấu trúc âm tiết tiếng Việt, nguyên âm, phụ âm
-│   │   └── renderer/      # Render và đặt dấu chính tả
-│   └── Cargo.toml
-│
-└── adapters/              # Các adapter tĩnh bằng Rust/C++ cho từng OS/IME
-    └── fcitx5/            # Fcitx5 C++ plugin wrapper
+```
+vime/                      # adapters repo (this one)
+├── vime-engine/           # companion git repo — engine + C ABI
+│   ├── engine/            #   pure Rust Vietnamese input-method core
+│   └── ffi/               #   C ABI boundary (vime.h, libvime.so / libvime.a)
+├── adapters/
+│   └── fcitx5/            # native C++ Fcitx5 adapter plugin
+└── nvim/                  # Neovim integration
 ```
 
-## Crates & Architecture
-
-- `engine`: standalone Vietnamese input-method engine (`Engine`, `Buffer`, `Parser`, Telex/VNI rule engines, `decode_vowel`/`encode_vowel` codec, syllable normalization and rendering).
-- `ffi`: C ABI boundary crate providing C declarations and types (`vime_create`, `vime_process_key`, `vime_reset`, `vime_set_input_method`, `vime_destroy`).
-- `adapters/fcitx5`: native C++ Fcitx5 plugin implementing `fcitx::InputMethodEngine`.
+`vime-engine/` is its own git repository (in `.gitignore` here); adapters
+consume it via the `libvime.so` C ABI and never depend on the Rust toolchain
+or engine internals.
 
 ## Building & Testing
 
-### Rust Engine & FFI
+### Engine + FFI (in `vime-engine/`)
 
 ```sh
-cargo test --all
-cargo build --release
+cd vime-engine
+cargo test --workspace
+cargo build --release       # produces libvime.so / libvime.a
 ```
 
-### Fcitx5 Adapter
+### Fcitx5 adapter
 
 ```sh
 cd adapters/fcitx5
 cmake -B build
-cmake --build build
+cmake --build build          # builds ../vime-engine/ffi then links libvime
 cmake --install build --prefix "$HOME/.local"
+```
+
+### Neovim
+
+```sh
+cd nvim && cargo check
 ```
