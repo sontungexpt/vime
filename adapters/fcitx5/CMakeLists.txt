@@ -42,15 +42,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(vime_engine)
 set(FFI_SOURCE_DIR "${vime_engine_SOURCE_DIR}/ffi")
 
-add_custom_command(
-    OUTPUT "${RUST_BACKEND}"
+# Always run cargo (it is cheap on no-op builds and detects changes itself);
+# this avoids cmake's stale-output problem with add_custom_command when Rust
+# sources change.
+add_custom_target(vime-ffi-backend ALL
     COMMAND "${CARGO_EXECUTABLE}" build --release
             --manifest-path "${FFI_SOURCE_DIR}/Cargo.toml"
             --target-dir "${RUST_TARGET_DIR}"
     WORKING_DIRECTORY "${FFI_SOURCE_DIR}"
+    BYPRODUCTS "${RUST_BACKEND}"
     COMMENT "Building the Rust Vietnamese FFI backend"
 )
-add_custom_target(vime-ffi-backend DEPENDS "${RUST_BACKEND}")
 
 add_library(vime MODULE
     src/state.cpp

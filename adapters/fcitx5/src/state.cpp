@@ -60,15 +60,16 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
     VIME_IF_DEV({
         VIME_DEBUG()
             << "vime_process_key"
-            << " consumed=" << output.consumed
-            << " changed=" << output.changed;
+            << " action="
+            << static_cast<int>(output.action);
     });
 
-    apply(output);
-
-    if (output.consumed) {
-        event.filterAndAccept();
+    if (output.action == VIME_ACTION_FORWARD) {
+        return;
     }
+
+    apply(output);
+    event.filterAndAccept();
 }
 
 void VimeState::reset()
@@ -93,39 +94,43 @@ void VimeState::setInputMethod(VimeInputMethod method)
 void VimeState::apply(VimeOutput output)
 {
     if (!ic_) {
-        if (output.commit) {
-            vime_free_string(output.commit);
-        }
-
-        if (output.rendered) {
-            vime_free_string(output.rendered);
-        }
-
         return;
     }
 
-    if (output.commit) {
-        VIME_INFO()
-            << "commit: "
-            << output.commit;
+    switch (output.action) {
+    case VIME_ACTION_COMMIT:
+        if (output.commit) {
+            VIME_INFO()
+                << "commit: "
+                << output.commit;
 
-        ic_->commitString(output.commit);
-        vime_free_string(output.commit);
-    }
+            ic_->commitString(output.commit);
 
-    if (output.rendered) {
-        VIME_IF_DEV({
-            VIME_DEBUG()
-                << "preedit: "
-                << output.rendered;
-        });
+            fcitx::Text empty("");
+            ic_->inputPanel().setClientPreedit(empty);
+            ic_->updatePreedit();
+        }
+        break;
 
-        fcitx::Text text(output.rendered);
+    case VIME_ACTION_UPDATE_PREEDIT:
+        if (output.rendered) {
+            VIME_IF_DEV({
+                VIME_DEBUG()
+                    << "preedit: "
+                    << output.rendered;
+            });
 
-        ic_->inputPanel().setClientPreedit(text);
-        ic_->updatePreedit();
+            fcitx::Text text(output.rendered);
 
-        vime_free_string(output.rendered);
+            ic_->inputPanel().setClientPreedit(text);
+            ic_->updatePreedit();
+        }
+        break;
+
+    case VIME_ACTION_NOOP:
+    case VIME_ACTION_FORWARD:
+    default:
+        break;
     }
 }
 
