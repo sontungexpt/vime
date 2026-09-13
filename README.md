@@ -17,10 +17,12 @@ vime/                      # adapters repo (this one)
 kept in-tree only to work on everything at once. Adapters do **not** reference
 it by folder path — they consume it as a dependency:
 
-- **nvim** depends on the `vime-engine` crate via git (with a `[patch]`
-  override to the local checkout during development).
-- **fcitx5** pulls the repository via CMake `FetchContent` (a
-  `FETCHCONTENT_SOURCE_DIR_VIME_ENGINE` override uses the local checkout).
+- **nvim** depends on the `vime-engine` crate via git. A gitignored
+  `.cargo/config.toml` `[patch]` resolves it from the local checkout during
+  development; release builds (without that file) resolve from GitHub.
+- **fcitx5** pulls the repository via CMake `FetchContent`. When the sibling
+  `../../engine` checkout is present it is used automatically; otherwise
+  (release/standalone) it clones from GitHub.
 
 ## Building & Testing
 
@@ -36,14 +38,13 @@ cargo build --release       # produces libvime.so / libvime.a
 
 ```sh
 cd adapters/fcitx5
-# development: build against the local checkout
-cmake -B build -DFETCHCONTENT_SOURCE_DIR_VIME_ENGINE="$HOME/.../vime/engine"
-cmake --build build         # fetches or uses local vime-engine, the FFI, links libvime
+cmake -B build              # auto-uses ../../engine when present; else clones from GitHub
+cmake --build build         # builds vime-engine's FFI crate and links libvime
 cmake --install build --prefix "$HOME/.local"
 ```
 
 ### Neovim
 
 ```sh
-cd adapters/nvim && cargo check   # resolves vime-engine from the local checkout via [patch]
+cd adapters/nvim && cargo check   # git dep; dev patch in .cargo/config.toml, GitHub in release
 ```

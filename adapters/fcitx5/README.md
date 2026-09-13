@@ -13,12 +13,13 @@ Rust-compiled `libvime.so` through the C ABI.
 Build and install the Fcitx5 addon:
 
 ```sh
-# development: consume the local checkout instead of cloning from GitHub
-cmake -B build -DFETCHCONTENT_SOURCE_DIR_VIME_ENGINE=/abs/path/vime/engine
-cmake --build build        # imports vime-engine, builds its FFI crate, links libvime
+cmake -B build              # auto-detects the sibling ../../engine checkout in dev
+cmake --build build         # builds its FFI crate and links libvime
 cmake --install build --prefix "$HOME/.local"
 ```
 
-Without the `FETCHCONTENT_SOURCE_DIR_VIME_ENGINE` override, CMake clones
-`https://github.com/sontungexpt/vime-engine.git` into `build/_deps/` on first
-configure.
+`vime-engine` is resolved automatically: in a development layout (the engine
+checkout next to this repo) CMake builds against the in-tree copy; otherwise it
+clones `https://github.com/sontungexpt/vime-engine.git` into `build/_deps/` on
+first configure — the release/standalone path. Force a specific location with
+`-DFETCHCONTENT_SOURCE_DIR_VIME_ENGINE=/path/vime/engine`.

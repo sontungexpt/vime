@@ -7,9 +7,3 @@ license = "MIT"
 
 [dependencies]
 vime-engine = { git = "https://github.com/sontungexpt/vime-engine.git" }
-
-# Local development override: resolves vime-engine from the nested checkout
-# (vime/engine/core) instead of the GitHub repository. Drop this section once
-# the crate is published to crates.io.
-[patch."https://github.com/sontungexpt/vime-engine.git"]
-vime-engine = { path = "../../engine/core" }

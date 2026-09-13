@@ -24,8 +24,16 @@ set(RUST_BACKEND "${RUST_TARGET_DIR}/release/libvime.so")
 include(FetchContent)
 
 # vime-engine is consumed as a dependency from GitHub (its `ffi` crate provides
-# libvime.so). For local development point FetchContent at the nested checkout:
-#   cmake -B build -DFETCHCONTENT_SOURCE_DIR_VIME_ENGINE=/abs/path/vime/engine
+# libvime.so). In a development layout the engine checkout lives in the sibling
+# directory ../../engine, so use the in-tree copy automatically; standalone and
+# release builds fall back to cloning from GitHub. An explicit
+# -DFETCHCONTENT_SOURCE_DIR_VIME_ENGINE=... always takes precedence.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../engine/Cargo.toml"
+   AND NOT DEFINED FETCHCONTENT_SOURCE_DIR_VIME_ENGINE)
+    set(FETCHCONTENT_SOURCE_DIR_VIME_ENGINE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../engine")
+    message(STATUS "vime-engine: using in-tree checkout ../../engine")
+endif()
 FetchContent_Declare(
     vime_engine
     GIT_REPOSITORY https://github.com/sontungexpt/vime-engine.git
