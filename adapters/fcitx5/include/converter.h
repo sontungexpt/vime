@@ -7,8 +7,6 @@
 
 #include <optional>
 
-using namespace vime::engine;
-
 namespace vime::fcitx5 {
 
 static inline uint32_t toVimeKeyState(fcitx::KeyStates state) {

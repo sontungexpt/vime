@@ -5,8 +5,6 @@
 #include <fcitx/inputcontextproperty.h>
 #include <fcitx-utils/key.h>
 
-using namespace vime::engine;
-
 namespace vime::fcitx5 {
 
 class VimeEngine;
