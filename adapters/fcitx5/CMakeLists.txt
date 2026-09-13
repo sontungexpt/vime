@@ -21,6 +21,19 @@ set(FFI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../engine/ffi")
 set(RUST_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/rust-target")
 set(RUST_BACKEND "${RUST_TARGET_DIR}/release/libvime.so")
 
+include(FetchContent)
+
+# vime-engine is consumed as a dependency from GitHub (its `ffi` crate provides
+# libvime.so). For local development point FetchContent at the nested checkout:
+#   cmake -B build -DFETCHCONTENT_SOURCE_DIR_VIME_ENGINE=/abs/path/vime/engine
+FetchContent_Declare(
+    vime_engine
+    GIT_REPOSITORY https://github.com/sontungexpt/vime-engine.git
+    GIT_TAG main
+)
+FetchContent_MakeAvailable(vime_engine)
+set(FFI_SOURCE_DIR "${vime_engine_SOURCE_DIR}/ffi")
+
 add_custom_command(
     OUTPUT "${RUST_BACKEND}"
     COMMAND "${CARGO_EXECUTABLE}" build --release
