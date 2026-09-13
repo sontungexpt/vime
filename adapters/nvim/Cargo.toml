@@ -6,4 +6,4 @@ description = "Rust support library for the Vietnamese Neovim integration"
 license = "MIT"
 
 [dependencies]
-vime-engine = { path = "../vime-engine/engine" }
+vime-engine = { path = "../../engine/core" }

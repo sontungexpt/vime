@@ -17,7 +17,7 @@ if(NOT DEFINED FCITX_INSTALL_PKGDATADIR)
     set(FCITX_INSTALL_PKGDATADIR "share/fcitx5")
 endif()
 
-set(FFI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../vime-engine/ffi")
+set(FFI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../engine/ffi")
 set(RUST_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/rust-target")
 set(RUST_BACKEND "${RUST_TARGET_DIR}/release/libvime.so")
 
