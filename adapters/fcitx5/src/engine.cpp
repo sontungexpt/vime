@@ -14,7 +14,7 @@ std::vector<fcitx::InputMethodEntry> VimeEngine::listInputMethods()
 {
   std::vector<fcitx::InputMethodEntry> result;
   auto entry = fcitx::InputMethodEntry("vime", "Vime", "vi", "vime");
-  entry.setIcon("input-keyboard").setLabel("Vi");
+  entry.setIcon("input-keyboard").setLabel("vi");
   result.emplace_back(std::move(entry));
   return result;
 }

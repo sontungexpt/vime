@@ -7,6 +7,7 @@
 #include <fcitx/inputpanel.h>
 
 #include <iomanip>
+#include <string>
 
 namespace vime::fcitx5 {
 
@@ -26,6 +27,7 @@ VimeState::~VimeState()
         handle_ = nullptr;
     }
 }
+
 
 void VimeState::keyEvent(fcitx::KeyEvent &event)
 {
