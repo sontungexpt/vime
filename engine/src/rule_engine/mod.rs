@@ -1,5 +1,5 @@
 mod api;
 mod default;
 
-pub use api::{RuleEngine, TransfromTarget};
+pub use api::RuleEngine;
 pub use default::{ConfiguredRuleEngine, ShapeRule, ToneRule, TypingRules};

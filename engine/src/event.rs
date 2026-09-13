@@ -40,7 +40,7 @@ pub enum Key {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct KeyEvent {
     pub key: Key,
-    pub state: KeyState,
+    pub states: KeyState,
 }
 
 impl KeyEvent {
@@ -49,7 +49,7 @@ impl KeyEvent {
     pub const fn key(key: Key) -> Self {
         Self {
             key,
-            state: KeyState::empty(),
+            states: KeyState::empty(),
         }
     }
 }

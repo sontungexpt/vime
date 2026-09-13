@@ -33,32 +33,32 @@ pub(crate) const CONFIG: &TypingRules = &TypingRules::new(
     &[
         ShapeRule {
             key: 'a',
-            vowel: RootVowel::A,
+            on: RootVowel::A,
             shape: Shape::Circumflex,
         },
         ShapeRule {
             key: 'w',
-            vowel: RootVowel::A,
+            on: RootVowel::A,
             shape: Shape::Breve,
         },
         ShapeRule {
             key: 'e',
-            vowel: RootVowel::E,
+            on: RootVowel::E,
             shape: Shape::Circumflex,
         },
         ShapeRule {
             key: 'o',
-            vowel: RootVowel::O,
+            on: RootVowel::O,
             shape: Shape::Circumflex,
         },
         ShapeRule {
             key: 'w',
-            vowel: RootVowel::O,
+            on: RootVowel::O,
             shape: Shape::Horn,
         },
         ShapeRule {
             key: 'w',
-            vowel: RootVowel::U,
+            on: RootVowel::U,
             shape: Shape::Horn,
         },
     ],

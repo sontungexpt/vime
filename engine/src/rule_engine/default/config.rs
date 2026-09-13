@@ -11,7 +11,7 @@ pub struct ToneRule {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ShapeRule {
     pub key: char,
-    pub vowel: RootVowel,
+    pub on: RootVowel,
     pub shape: Shape,
 }
 
@@ -77,8 +77,7 @@ impl<'a> TypingRules<'a> {
         while i < shapes.len() {
             let mut j = i + 1;
             while j < shapes.len() {
-                if shapes[i].key == shapes[j].key
-                    && (shapes[i].vowel as u16) == (shapes[j].vowel as u16)
+                if shapes[i].key == shapes[j].key && (shapes[i].on as u16) == (shapes[j].on as u16)
                 {
                     panic!("Invalid layout: a shape key applies multiple shapes to one owner");
                 }

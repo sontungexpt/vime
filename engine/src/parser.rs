@@ -4,7 +4,7 @@ use crate::{
         rule::{self, check_nucleus_validity, NucleusStatus},
         BaseVowel, Case, Coda, Onset, Shape, Tone,
     },
-    rule_engine::{RuleEngine, TransfromTarget},
+    rule_engine::RuleEngine,
     RootVowel,
 };
 
@@ -400,7 +400,7 @@ impl<KM: RuleEngine> Parser<KM> {
     #[inline]
     fn push_vowel_transform(&mut self, input: char) -> ParseStatus {
         // `Some` means the key resolved into a tone or a stroke.
-        if let Some(effect) = self.try_common_transform(input) {
+        if let Some(effect) = self.try_tone_or_stroke(input) {
             return match effect {
                 TransformEffect::Applied => self.status,
                 TransformEffect::Reverted | TransformEffect::NotApplicable => {
@@ -465,7 +465,7 @@ impl<KM: RuleEngine> Parser<KM> {
     /// handlers; anything else falls back to the literal handlers.
     #[inline]
     fn push_coda_transform(&mut self, input: char) -> ParseStatus {
-        if let Some(effect) = self.try_common_transform(input) {
+        if let Some(effect) = self.try_tone_or_stroke(input) {
             return match effect {
                 TransformEffect::Applied => self.status,
                 TransformEffect::Reverted | TransformEffect::NotApplicable => {
@@ -486,7 +486,7 @@ impl<KM: RuleEngine> Parser<KM> {
 
     /// Resolves a tone or D-stroke transform key.
     #[inline(always)]
-    fn try_common_transform(&mut self, key: char) -> Option<TransformEffect> {
+    fn try_tone_or_stroke(&mut self, key: char) -> Option<TransformEffect> {
         // ---------------------------------------------------------
         // 1. Tone
         // ---------------------------------------------------------
@@ -656,7 +656,7 @@ impl<KM: RuleEngine> Parser<KM> {
         for index in (0..vseq_len).rev() {
             let base = self.syllable.vowels[index].value;
 
-            let Some(shape) = self.mapping.shape(key, TransfromTarget::BaseVowel(base)) else {
+            let Some(shape) = self.mapping.shape(key, base.root()) else {
                 continue;
             };
 

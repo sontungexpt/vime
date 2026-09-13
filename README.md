@@ -1,122 +1,57 @@
 # Vime Vietnamese Input Method
 
-Vime is organized as three independent projects:
+Vime is organized into modular layers:
 
-- `engine/`: standalone Vietnamese input-method core
-- `vime-fcitx5/`: Fcitx5 adapter and addon
-- `nvim/`: Neovim integration
-
-Each directory is an independent Cargo project with its own lockfile.
-
-```text
-                 ┌─────────────────────────────────────────────┐
-                 │              FRONTENDS (independent crates) │
-                 │       vime-fcitx5/  ·  nvim/                     │
-                 └──────────────────────┬──────────────────────┘
-                                        │ Input
-                                        ▼
-    engine/src  ┌─────────────────────────────────────────────┐
-                │  Engine   (engine.rs)  Input ─▶ Result      │
-                │        owns  Config + Composition           │
-                │                  │                          │
-                │                  ▼                          │
-                │  Composition (composition.rs)              │
-                │   raw ASCII buffer + cursor, renormalizes  │
-                │        │ KeyContext          │ staged chars │
-                │        ▼                    ▼               │
-                │  Interpreter (interpreter/) Processor (processor/)
-                │   config · telex · vni      apply · parse · normalize
-                │   key ─▶ Operation          render · Orthography
-                │        │                     │              │
-                │        ▼                     ▼              │
-                │  Operation (operation.rs) ★ shared middle   │
-                │  Character (character/) ◀───┘               │
-                │      Vowel · codec                          │
-                └─────────────────────────────────────────────┘
-```
-
-Layers only depend downward: `character` has no dependencies, `processor`
-consumes the codec, `interpreter` produces [`Operation`]s, `composition`
-drives the interpreter and applies processor rules, `engine` wires it all
-together for a frontend.
-
-### Module dependencies
-
-| Module                    | Depends on                                            | Depended on by                    |
-|---------------------------|-------------------------------------------------------|-----------------------------------|
-| `character/` (vowel, codec) | —                                                    | operation · interpreter · processor |
-| `operation.rs`            | `character::{Shape, Tone}`                            | interpreter · composition · processor |
-| `interpreter/` (config, telex, vni) | `character::{decode_vowel, BaseVowel, Shape, Tone}` · `operation` | composition · engine           |
-| `processor/` (normalize, syllable, render, rules, tone) | `character::{Vowel, Tone}`            | composition                      |
-| `composition.rs`          | `interpreter` · `processor` · `operation`             | engine                           |
-| `config.rs`               | `interpreter` · `processor::Orthography`              | engine                           |
-| `state.rs`                | `composition`                                         | engine                           |
-| `input.rs` / `result.rs`  | —                                                    | engine                           |
-| `engine.rs`               | composition · config · interpreter · input · result · state | lib (public API)            |
-| `lib.rs`                  | all of the above (re-exports the public surface)      | `vime-fcitx5/` · `nvim/`               |
-
-### One keystroke end to end
+- `engine/`: standalone pure Rust Vietnamese input-method core engine
+- `ffi/`: C ABI boundary exposing public C headers (`vime.h`) and types/conversions
+- `adapters/`: native platform and IME framework adapters
+  - `adapters/fcitx5/`: native C++ Fcitx5 adapter plugin
 
 ```text
- Key 'a' ──▶ Engine::input(Input::Character('a'))
-              └─ Composition::insert(a, interpreter, orthography)
-                   ├─ context = KeyContext { target: char left of cursor }
-                   ├─ Operation from interpreter
-                   │     Insert(a)      → push 'a'
-                   │     Shape(Tilde…)  → push marker letter (w / d / base)
-                   │     Tone(Acute…)   → push tone key (s f r x j)
-                   │     RemoveTone     → push 'z'
-                   ├─ canonicalize_into → merge duplicate horns, relocate tones
-                   ├─ parse            → syllable grammar → Valid / not
-                   │     Valid   → serialize + render_word → rendered
-                   │     invalid → keep staged verbatim (backspace-safe)
-                   └─ Result::Changed
-                        │
-                        ▼
- frontend ──▶ Engine::state()  State { composition, rendered }  → preedit
- Space/Enter ──▶ Result::Commit(String) → commit + clear buffer
+vime/
+├── ffi/                   # [C ABI Boundary] Tầng tiếp xúc với C/C++ Frontend
+│   ├── include/
+│   │   └── vime.h         # Header file C công khai cho C/C++ Frontend
+│   └── src/
+│       ├── lib.rs         # C-FFI entry points (vime_create, vime_process_key,...)
+│       ├── types.rs       # C-compatible structs/enums (VimeOutput, VimeKeyEvent,...)
+│       ├── convert.rs     # Chuyển đổi giữa C-Types <-> Rust Domain Types
+│       └── logging.rs     # Bridge chuyển log từ Rust `log` crate sang C Callback
+│
+├── engine/                # [Pure Rust Engine] Core xử lý dấu, quy tắc tiếng Việt
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── engine.rs      # Engine điều phối chính (State Machine)
+│   │   ├── composition/   # Quản lý chuỗi đang gõ (Preedit buffer)
+│   │   ├── rule_engine/   # Luật gõ Telex, VNI, VIQR,...
+│   │   ├── phonology/     # Cấu trúc âm tiết tiếng Việt, nguyên âm, phụ âm
+│   │   └── renderer/      # Render và đặt dấu chính tả
+│   └── Cargo.toml
+│
+└── adapters/              # Các adapter tĩnh bằng Rust/C++ cho từng OS/IME
+    └── fcitx5/            # Fcitx5 C++ plugin wrapper
 ```
 
-## Crates
+## Crates & Architecture
 
-- `engine`: standalone Vietnamese input-method core — `Engine`, `Composition`,
-  layout-independent `Interpreter`/`Processor` split, Telex + VNI configs,
-  `decode_vowel`/`encode_vowel` codec, syllable normalize and render.
-- `vime-fcitx5`: C ABI backend plus native C++ Fcitx5 adapter.
-- `nvim`: Lua entry point and optional Rust support library.
+- `engine`: standalone Vietnamese input-method engine (`Engine`, `Buffer`, `Parser`, Telex/VNI rule engines, `decode_vowel`/`encode_vowel` codec, syllable normalization and rendering).
+- `ffi`: C ABI boundary crate providing C declarations and types (`vime_create`, `vime_process_key`, `vime_reset`, `vime_set_input_method`, `vime_destroy`).
+- `adapters/fcitx5`: native C++ Fcitx5 plugin implementing `fcitx::InputMethodEngine`.
 
-## Core usage
+## Building & Testing
 
-```rust
-use vietnamese_engine::{Config, Engine, Input};
-
-let mut engine = Engine::new(Config::default());
-for character in "aas".chars() {
-    engine.input(Input::Character(character));
-}
-assert_eq!(engine.rendered(), "ấ");
-```
-
-The core stores raw composition separately from rendered output. For example,
-raw `aas` renders as normalized Vietnamese `ấ`. Frontends read `engine.state()`
-to display or commit the preedit.
-
-## Test without Fcitx5
+### Rust Engine & FFI
 
 ```sh
-(cd engine && cargo test)
-printf 'aas ' | (cd engine && cargo run --example vietnamese-cli)
+cargo test --all
+cargo build --release
 ```
 
-## Fcitx5 integration
+### Fcitx5 Adapter
 
-Fcitx5 addons use a C++ ABI. The adapter in `vime-fcitx5/native/vime.cpp` is installed as
-`vime.so`, subclasses `fcitx::InputMethodEngine`, implements `keyEvent`,
-`activate`, `reset`, and `listInputMethods`, and exports
-`fcitx_addon_factory_instance` with `FCITX_ADDON_FACTORY`.
-
-The adapter translates Fcitx5 `KeyEvent` values to core `KeyEvent` values and
-maps `EngineAction` values to `InputContext::commitString`,
-`InputPanel::setClientPreedit`, `InputContext::updatePreedit`, and related
-Fcitx5 operations. The Wayland frontend remains Fcitx5's responsibility; the
-core does not implement a Wayland protocol.
+```sh
+cd adapters/fcitx5
+cmake -B build
+cmake --build build
+cmake --install build --prefix "$HOME/.local"
+```

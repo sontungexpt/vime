@@ -1,13 +1,4 @@
-use crate::phonology::{BaseVowel, Shape, Tone};
-
-/// What a shape key may be applied to.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum TransfromTarget {
-    /// A raw character in the buffer.
-    Char(char),
-    /// A parsed Vietnamese base vowel.
-    BaseVowel(BaseVowel),
-}
+use crate::phonology::{RootVowel, Shape, Tone};
 
 /// Interprets keyboard input into semantic Vietnamese actions.
 pub trait RuleEngine {
@@ -22,5 +13,5 @@ pub trait RuleEngine {
 
     /// Interprets `input` as a shape key for `target`, returning the
     /// configured [`Shape`].
-    fn shape(&self, input: char, target: TransfromTarget) -> Option<Shape>;
+    fn shape(&self, input: char, target: RootVowel) -> Option<Shape>;
 }

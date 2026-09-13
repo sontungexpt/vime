@@ -33,7 +33,7 @@ impl Syllable {
 }
 
 impl Default for Syllable {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self {
             onset: None,

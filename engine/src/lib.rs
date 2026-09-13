@@ -32,7 +32,7 @@ pub use config::Config;
 pub use engine::Engine;
 pub use event::{Key, KeyEvent, KeyState};
 pub use rule_engine::{
-    ConfiguredRuleEngine, RuleEngine, ShapeRule, ToneRule, TransfromTarget, TypingRules,
+    ConfiguredRuleEngine, RuleEngine, ShapeRule, ToneRule, TypingRules,
 };
 pub use parser::{DeadReason, ParsePhase, ParseStatus, Parser};
 pub use phonology::{

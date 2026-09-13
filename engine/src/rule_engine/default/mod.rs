@@ -1,5 +1,4 @@
-use crate::phonology::decode_vowel;
-use crate::{Shape, Tone};
+use crate::{RootVowel, Shape, Tone};
 
 mod config;
 mod telex;
@@ -8,7 +7,6 @@ mod vni;
 
 pub use config::{ShapeRule, ToneRule, TypingRules};
 
-use super::api::TransfromTarget;
 use super::RuleEngine;
 
 /// Configuration-driven key mapping implementation.
@@ -80,29 +78,13 @@ impl RuleEngine for ConfiguredRuleEngine<'_> {
     }
 
     #[inline(always)]
-    fn shape(&self, input: char, target: TransfromTarget) -> Option<Shape> {
+    fn shape(&self, input: char, target: RootVowel) -> Option<Shape> {
         let loinput = input.to_ascii_lowercase();
-
-        // Only vowel families are shapeable. Resolve the target into a
-        // `RootVowel` owner:
-        //  - a char resolves through the codec (`ắ`/`Ắ` → `A`);
-        //  - a decoded `BaseVowel` maps straight to its root.
-        // Anything else — `d`/`đ`, `x`, `q`, `1`, arbitrary Unicode — matches
-        // no shape key and passes through.
-        let owner = match target {
-            TransfromTarget::Char(c) => {
-                let Some((base, _, _)) = decode_vowel(c) else {
-                    return None;
-                };
-                base.root()
-            }
-            TransfromTarget::BaseVowel(base) => base.root(),
-        };
 
         self.config
             .shapes
             .iter()
-            .find(|map| map.key == loinput && map.vowel == owner)
+            .find(|map| map.key == loinput && map.on == target)
             .map(|map| map.shape)
     }
 }

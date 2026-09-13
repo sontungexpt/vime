@@ -1,11 +1,12 @@
 [package]
-name = "vime-fcitx5"
+name = "vime-ffi"
 version = "0.1.0"
 edition = "2021"
-description = "Rust backend ABI for the Vietnamese Fcitx5 adapter"
+description = "C ABI FFI boundary for the Vime Vietnamese input engine"
 license = "MIT"
 
 [lib]
+name = "vime_ffi"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
