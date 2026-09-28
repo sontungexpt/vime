@@ -91,11 +91,24 @@ static inline std::optional<VimeKeyEvent> toVimeKeyEvent(
         break;
     }
 
-    const auto character =
-        fcitx::Key::keySymToUnicode(key.sym());
+    auto character = fcitx::Key::keySymToUnicode(key.sym());
 
     if (character == 0) {
         return std::nullopt;
+    }
+
+    // The engine reads case from the character, not from the modifier state:
+    // its own corpus drives uppercase from literal `U`, `W`, `F`. The keysym
+    // alone carries no case, so a capitalised key would arrive lowercase and
+    // lose the case the user asked for.
+    if (key.states().test(fcitx::KeyState::Shift)
+        || key.states().test(fcitx::KeyState::CapsLock)) {
+        // ASCII only, matching the engine, which folds key lookups with
+        // `to_ascii_lowercase`. Every Telex key is ASCII, so a wider rule would
+        // not be more correct here, only more locale-dependent.
+        if (character >= 'a' && character <= 'z') {
+            character -= 0x20;
+        }
     }
 
     event.character = character;

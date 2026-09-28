@@ -37,12 +37,18 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
 
     const auto key = event.key();
 
-    // A bare modifier press carries no character, but Ctrl+<letter> does: the
-    // keysym is still a letter, so it would otherwise reach the engine and be
-    // inserted instead of reaching the application. Every shortcut would become
-    // stray text in the preedit. Forward anything with a modifier and let the
-    // application have it.
-    if (key.hasModifier()) {
+    // Shift and CapsLock change a key's case, not its meaning, so a letter
+    // under either still has to reach the engine: uppercase is how Telex writes
+    // a shape (`W` for `w`) and how a caller asks for a capital. Only the
+    // modifiers that combine with a key into a shortcut are forwarded.
+    //
+    // The keysym of Ctrl+A is still `a`, so without this a shortcut would
+    // reach the engine and be inserted as text. That also corrupted whatever
+    // was typed next, since the stray letter stayed in the buffer.
+    const auto states = key.states();
+    if (states.test(fcitx::KeyState::Ctrl) || states.test(fcitx::KeyState::Alt)
+        || states.test(fcitx::KeyState::Super) || states.test(fcitx::KeyState::Hyper)
+        || states.test(fcitx::KeyState::Meta)) {
         return;
     }
 
