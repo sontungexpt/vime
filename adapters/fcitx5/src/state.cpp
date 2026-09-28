@@ -36,6 +36,16 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
     }
 
     const auto key = event.key();
+
+    // A bare modifier press carries no character, but Ctrl+<letter> does: the
+    // keysym is still a letter, so it would otherwise reach the engine and be
+    // inserted instead of reaching the application. Every shortcut would become
+    // stray text in the preedit. Forward anything with a modifier and let the
+    // application have it.
+    if (key.hasModifier()) {
+        return;
+    }
+
     const auto vimeKeyEvent = toVimeKeyEvent(key);
 
     if (!vimeKeyEvent) {
@@ -76,12 +86,15 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
 
 void VimeState::reset()
 {
-    if (!handle_) {
+    if (!handle_ || !vime_reset(handle_)) {
         return;
     }
 
-    const auto output = vime_reset(handle_);
-    apply(output);
+    // The buffer is empty, so the preedit must go with it. `vime_reset` has no
+    // action to dispatch -- it consumes no key and commits nothing -- so the
+    // repaint is this method's own responsibility rather than `apply`'s.
+    ic_->inputPanel().setClientPreedit(fcitx::Text(""));
+    ic_->updatePreedit();
 }
 
 void VimeState::setInputMethod(VimeInputMethod method)
@@ -132,20 +145,19 @@ void VimeState::apply(VimeOutput output)
 
     switch (output.action) {
     case VIME_ACTION_COMMIT: {
-        // The commit text is read from the handle rather than from `output`,
-        // matching how the word is fetched: text comes from the engine when
-        // the action says it is wanted, not eagerly on every call.
-        const char *committed = vime_committed(handle_);
-
-        if (!committed) {
+        // The commit text comes from the output that produced it, rather than
+        // from a separate accessor: the field is set on VIME_ACTION_COMMIT and
+        // NULL for every other action, so there is no window in which a stale
+        // commit could be read.
+        if (!output.commit) {
             break;
         }
 
         VIME_INFO()
             << "commit: "
-            << committed;
+            << output.commit;
 
-        ic_->commitString(committed);
+        ic_->commitString(output.commit);
 
         // Committing clears the engine's buffer, so the preedit window goes
         // with it.
