@@ -28,6 +28,9 @@ public:
   void apply(VimeOutput output);
 
 private:
+  // Re-reads the preedit from the handle and repaints the input panel.
+  void showPreedit();
+
   VimeEngine *engine_{nullptr};
   fcitx::InputContext *ic_{nullptr};
   VimeEngineHandle *handle_{nullptr};

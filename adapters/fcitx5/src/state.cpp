@@ -90,7 +90,38 @@ void VimeState::setInputMethod(VimeInputMethod method)
         return;
     }
 
-    vime_set_input_method(handle_, method);
+    // Switching the method clears the buffer, so on success the word has
+    // changed and must be re-read. The C entry point reports only success, so
+    // there is no action to dispatch here.
+    if (vime_set_input_method(handle_, method)) {
+        showPreedit();
+    }
+}
+
+void VimeState::showPreedit()
+{
+    if (!ic_) {
+        return;
+    }
+
+    // "Preedit" is fcitx's word for this; the engine just calls it the word it
+    // parsed. Fetched only now, when something actually needs it — a caret
+    // move leaves the text alone but still has to redraw, so both callers read
+    // it the same way.
+    const char *word = vime_parsed(handle_);
+
+    if (!word) {
+        return;
+    }
+
+    VIME_IF_DEV({
+        VIME_DEBUG()
+            << "preedit: "
+            << word;
+    });
+
+    ic_->inputPanel().setClientPreedit(fcitx::Text(word));
+    ic_->updatePreedit();
 }
 
 void VimeState::apply(VimeOutput output)
@@ -100,33 +131,32 @@ void VimeState::apply(VimeOutput output)
     }
 
     switch (output.action) {
-    case VIME_ACTION_COMMIT:
-        if (output.commit) {
-            VIME_INFO()
-                << "commit: "
-                << output.commit;
+    case VIME_ACTION_COMMIT: {
+        // The commit text is read from the handle rather than from `output`,
+        // matching how the word is fetched: text comes from the engine when
+        // the action says it is wanted, not eagerly on every call.
+        const char *committed = vime_committed(handle_);
 
-            ic_->commitString(output.commit);
-
-            fcitx::Text empty("");
-            ic_->inputPanel().setClientPreedit(empty);
-            ic_->updatePreedit();
+        if (!committed) {
+            break;
         }
+
+        VIME_INFO()
+            << "commit: "
+            << committed;
+
+        ic_->commitString(committed);
+
+        // Committing clears the engine's buffer, so the preedit window goes
+        // with it.
+        ic_->inputPanel().setClientPreedit(fcitx::Text(""));
+        ic_->updatePreedit();
         break;
+    }
 
-    case VIME_ACTION_UPDATE_PREEDIT:
-        if (output.rendered) {
-            VIME_IF_DEV({
-                VIME_DEBUG()
-                    << "preedit: "
-                    << output.rendered;
-            });
-
-            fcitx::Text text(output.rendered);
-
-            ic_->inputPanel().setClientPreedit(text);
-            ic_->updatePreedit();
-        }
+    case VIME_ACTION_CHANGED:
+    case VIME_ACTION_CURSOR_MOVED:
+        showPreedit();
         break;
 
     case VIME_ACTION_NOOP:
