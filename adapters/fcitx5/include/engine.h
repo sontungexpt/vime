@@ -8,10 +8,10 @@
 
 namespace vime::fcitx5 {
 
-class VimeEngine final : public fcitx::InputMethodEngine {
+class Vime final : public fcitx::InputMethodEngine {
 public:
-  explicit VimeEngine(fcitx::Instance *instance);
-  ~VimeEngine() override = default;
+  explicit Vime(fcitx::Instance *instance);
+  ~Vime() override;
 
   std::vector<fcitx::InputMethodEntry> listInputMethods() override;
   void activate(const fcitx::InputMethodEntry &entry, fcitx::InputContextEvent &event) override;
@@ -19,11 +19,15 @@ public:
   void reset(const fcitx::InputMethodEntry &entry, fcitx::InputContextEvent &event) override;
   void keyEvent(const fcitx::InputMethodEntry &entry, fcitx::KeyEvent &event) override;
 
+  // Getters
   fcitx::Instance *instance() const { return instance_; }
+  VimeSessionFactoryHandle *sessionFactory() const { return sessionFactory_; }
 
 private:
   fcitx::Instance *instance_{nullptr};
-  fcitx::FactoryFor<VimeState> factory_;
+  fcitx::FactoryFor<VimeState> stateFactory_;
+
+  VimeSessionFactoryHandle *sessionFactory_{nullptr};
 };
 
-}
+} // namespace vime::fcitx5

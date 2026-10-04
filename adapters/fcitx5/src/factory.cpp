@@ -10,7 +10,7 @@ class VimeFactory final : public fcitx::AddonFactory {
 public:
   fcitx::AddonInstance *create(fcitx::AddonManager *manager) override
   {
-    return new VimeEngine(manager->instance());
+    return new VimeInputMethodEngine(manager->instance());
   }
 };
 

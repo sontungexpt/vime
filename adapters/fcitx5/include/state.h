@@ -8,11 +8,11 @@
 
 namespace vime::fcitx5 {
 
-class VimeEngine;
+class Vime;
 
 class VimeState final : public fcitx::InputContextProperty {
 public:
-  VimeState(VimeEngine *engine, fcitx::InputContext *ic);
+  VimeState(Vime *engine, fcitx::InputContext *ic);
   ~VimeState() override;
 
   // Non-copyable, non-movable (managed by Fcitx5 InputContextManager)
@@ -23,17 +23,13 @@ public:
 
   void keyEvent(fcitx::KeyEvent &event);
   void reset();
-  void setInputMethod(VimeInputMethod method);
 
-  void apply(VimeOutput output);
 
 private:
-  // Re-reads the preedit from the handle and repaints the input panel.
-  void showPreedit();
 
-  VimeEngine *engine_{nullptr};
+  Vime *engine_{nullptr};
   fcitx::InputContext *ic_{nullptr};
-  VimeEngineHandle *handle_{nullptr};
+  VimeSessionHandle *session_{nullptr};
 };
 
 }

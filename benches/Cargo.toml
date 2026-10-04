@@ -1,0 +1,17 @@
+[package]
+name = "vime-bench"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+skey-engine = { path = "../refs/skey-engine" }
+vime-engine = { path = "../engine/core" }
+vime-engine-ffi = { path = "../engine/ffi" }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "compare_engines"
+path = "benches/compare_engines.rs"
+harness = false
