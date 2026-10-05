@@ -24,6 +24,9 @@ public:
   void keyEvent(fcitx::KeyEvent &event);
   void reset();
 
+private:
+  void showPreedit();
+
 
 private:
 

@@ -23,6 +23,58 @@ VimeState::~VimeState()
   }
 }
 
+// Helper: compute byte offset of cursor in UTF-8 string
+static size_t cursorByteOffset(const char *text, size_t codepointIndex) {
+    if (!text || codepointIndex == 0) {
+        return 0;
+    }
+    size_t byteOffset = 0;
+    const unsigned char *p = reinterpret_cast<const unsigned char *>(text);
+    size_t charIndex = 0;
+    while (codepointIndex > 0 && *p) {
+        size_t charLen = 1;
+        if ((*p & 0x80) == 0x00) charLen = 1;
+        else if ((*p & 0xE0) == 0xC0) charLen = 2;
+        else if ((*p & 0xF0) == 0xE0) charLen = 3;
+        else if ((*p & 0xF8) == 0xF0) charLen = 4;
+
+        if (charIndex == codepointIndex) {
+            break;
+        }
+        byteOffset += charLen;
+        p += charLen;
+        codepointIndex--;
+    }
+    return byteOffset;
+}
+
+// Show preedit with proper cursor position
+void VimeState::showPreedit() {
+    if (!ic_ || !session_) {
+        return;
+    }
+
+    VimeStringView rendered = vime_session_get_rendered(session_);
+    if (rendered.len == 0) {
+        ic_->inputPanel().setClientPreedit(fcitx::Text(""));
+        ic_->updatePreedit();
+        return;
+    }
+
+    size_t cursorChars = vime_session_get_rendered_cursor(session_);
+    size_t cursorBytes = cursorByteOffset(rendered.data, cursorChars);
+
+    fcitx::Text preeditText(std::string(rendered.data, rendered.len));
+    preeditText.setCursor(static_cast<int>(cursorBytes));
+
+    if (ic_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
+        ic_->inputPanel().setClientPreedit(preeditText);
+    } else {
+        ic_->inputPanel().setPreedit(preeditText);
+    }
+    ic_->updatePreedit();
+}
+
 void VimeState::keyEvent(fcitx::KeyEvent &event)
 {
     if (event.isRelease() || !session_) {
@@ -93,12 +145,12 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
         return;
     }
 
+    VimeInsertResult result = vime_session_insert(session_, character);
 
-
-    // const auto output = vime_process_key(
-    //     handle_,
-    //     *vimeKeyEvent
-    // );
+    // Show preedit after every key that produces output
+    if (result.kind != VIME_INSERT_INVALID) {
+        showPreedit();
+    }
 
     // Do not show any key in release mode because user can type password or something like that
     // So if we require them to send some log to debug maybe you will be busted :))
@@ -106,11 +158,10 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
         VIME_DEBUG()
             << "vime_process_key"
             << " action="
-            << static_cast<int>(output.action);
+            << static_cast<int>(result.kind);
     });
 
 
-    // apply(output);
     event.filterAndAccept();
 }
 
@@ -128,32 +179,5 @@ void VimeState::reset()
     ic_->inputPanel().setClientPreedit(fcitx::Text(""));
     ic_->updatePreedit();
 }
-
-
-// void VimeState::showPreedit()
-// {
-//     if (!ic_) {
-//         return;
-//     }
-//
-//     // "Preedit" is fcitx's word for this; the engine just calls it the word it
-//     // parsed. Fetched only now, when something actually needs it — a caret
-//     // move leaves the text alone but still has to redraw, so both callers read
-//     // it the same way.
-//     const char *word = vime_parsed(handle_);
-//
-//     if (!word) {
-//         return;
-//     }
-//
-//     VIME_IF_DEV({
-//         VIME_DEBUG()
-//             << "preedit: "
-//             << word;
-//     });
-//
-//     ic_->inputPanel().setClientPreedit(fcitx::Text(word));
-//     ic_->updatePreedit();
-// }
 
 } // namespace vime::fcitx5
