@@ -3,6 +3,7 @@
 #include "log.h"
 
 #include <fcitx-utils/keysym.h>
+#include <fcitx-utils/log.h>
 #include <fcitx/inputpanel.h>
 
 #include <iomanip>
@@ -11,92 +12,97 @@
 namespace vime::fcitx5 {
 
 VimeState::VimeState(Vime *engine, fcitx::InputContext *ic)
-    : engine_(engine), ic_(ic), session_(vime_session_create(engine_->sessionFactory()))
+    : engine_(engine),
+      ic_(ic),
+      session_(vime_session_create(engine_->sessionFactory()))
 {
 }
 
 VimeState::~VimeState()
 {
-  if (session_) {
-    vime_session_destroy(session_);
-    session_ = nullptr;
-  }
+    if (session_) {
+        vime_session_destroy(session_);
+        session_ = nullptr;
+    }
 }
 
-// Helper: compute byte offset of cursor in UTF-8 string
-static size_t cursorByteOffset(const char *text, size_t codepointIndex) {
-    if (!text || codepointIndex == 0) {
-        return 0;
-    }
-    size_t byteOffset = 0;
-    const unsigned char *p = reinterpret_cast<const unsigned char *>(text);
-    size_t charIndex = 0;
-    while (codepointIndex > 0 && *p) {
-        size_t charLen = 1;
-        if ((*p & 0x80) == 0x00) charLen = 1;
-        else if ((*p & 0xE0) == 0xC0) charLen = 2;
-        else if ((*p & 0xF0) == 0xE0) charLen = 3;
-        else if ((*p & 0xF8) == 0xF0) charLen = 4;
-
-        if (charIndex == codepointIndex) {
-            break;
-        }
-        byteOffset += charLen;
-        p += charLen;
-        codepointIndex--;
-    }
-    return byteOffset;
-}
-
-// Show preedit with proper cursor position
-void VimeState::showPreedit() {
+void VimeState::showPreedit()
+{
     if (!ic_ || !session_) {
         return;
     }
 
-    VimeStringView rendered = vime_session_get_rendered(session_);
-    if (rendered.len == 0) {
-        ic_->inputPanel().setClientPreedit(fcitx::Text(""));
-        ic_->updatePreedit();
+    const VimeStringView rendered =
+        vime_session_get_rendered(session_);
+
+    fcitx::Text preedit;
+
+    if (rendered.len != 0) {
+        preedit.append(
+            std::string(rendered.data, rendered.len),
+            fcitx::TextFormatFlag::Underline);
+
+        const size_t cursor =
+            vime_session_get_rendered_cursor(session_);
+
+        // fcitx::Text cursor is a UTF-8 byte position.
+        preedit.setCursor(static_cast<int>(cursor));
+        VIME_IF_DEV({
+            VIME_DEBUG()
+                << "showPreedit: rendered="
+                << std::string(rendered.data, rendered.len)
+                << " cursor="
+                << cursor;
+        });
+    }
+
+    const bool useClientPreedit =
+        ic_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit);
+
+    if (useClientPreedit) {
+        ic_->inputPanel().setClientPreedit(preedit);
+    } else {
+        ic_->inputPanel().setPreedit(preedit);
+    }
+
+    ic_->updatePreedit();
+}
+
+void VimeState::clearPreedit()
+{
+    if (!ic_) {
         return;
     }
 
-    size_t cursorChars = vime_session_get_rendered_cursor(session_);
-    size_t cursorBytes = cursorByteOffset(rendered.data, cursorChars);
-
-    fcitx::Text preeditText(std::string(rendered.data, rendered.len));
-    preeditText.setCursor(static_cast<int>(cursorBytes));
-
-    if (ic_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
-        ic_->inputPanel().setClientPreedit(preeditText);
-    } else {
-        ic_->inputPanel().setPreedit(preeditText);
-    }
+    ic_->inputPanel().reset();
     ic_->updatePreedit();
+}
+
+void VimeState::commitPreedit()
+{
+    if (!ic_ || !session_) {
+        return;
+    }
+
+    const VimeStringView rendered =
+        vime_session_get_rendered(session_);
+
+    if (rendered.len != 0) {
+        ic_->commitString(
+            std::string(rendered.data, rendered.len));
+    }
+
+    vime_session_reset(session_);
+    clearPreedit();
 }
 
 void VimeState::keyEvent(fcitx::KeyEvent &event)
 {
-    if (event.isRelease() || !session_) {
+    if (event.isRelease() || !session_ || !ic_) {
         return;
     }
 
     const auto key = event.key();
-
-    // Shift and CapsLock change a key's case, not its meaning, so a letter
-    // under either still has to reach the engine: uppercase is how Telex writes
-    // a shape (`W` for `w`) and how a caller asks for a capital. Only the
-    // modifiers that combine with a key into a shortcut are forwarded.
-    //
-    // The keysym of Ctrl+A is still `a`, so without this a shortcut would
-    // reach the engine and be inserted as text. That also corrupted whatever
-    // was typed next, since the stray letter stayed in the buffer.
-    const auto states = key.states();
-    if (states.test(fcitx::KeyState::Ctrl) || states.test(fcitx::KeyState::Alt)
-        || states.test(fcitx::KeyState::Super) || states.test(fcitx::KeyState::Hyper)
-        || states.test(fcitx::KeyState::Meta)) {
-        return;
-    }
 
     VIME_IF_DEV({
         VIME_DEBUG()
@@ -109,75 +115,130 @@ void VimeState::keyEvent(fcitx::KeyEvent &event)
     });
 
     switch (key.sym()) {
+
     case FcitxKey_BackSpace:
-        vime_session_backspace(session_);
-        break;
+        if (vime_session_backspace(session_)) {
+            showPreedit();
+            event.filterAndAccept();
+        }
+        return;
 
     case FcitxKey_Delete:
-        vime_session_delete(session_);
-        break;
-    case FcitxKey_Left:
-        vime_session_move_cursor_left(session_, 1);
-        break;
-    case FcitxKey_Right:
-        vime_session_move_cursor_right(session_, 1);
-        break;
-    case FcitxKey_Return:
-    case FcitxKey_KP_Enter:
-        break;
+        if (vime_session_delete(session_)) {
+            showPreedit();
+            event.filterAndAccept();
+        }
+        return;
 
-    case FcitxKey_Tab:
-        break;
+    case FcitxKey_Left:
+        if (vime_session_move_cursor_left(session_, 1)) {
+            showPreedit();
+            event.filterAndAccept();
+        }
+        return;
+
+    case FcitxKey_Right:
+        if (vime_session_move_cursor_right(session_, 1)) {
+            showPreedit();
+            event.filterAndAccept();
+        }
+        return;
 
     case FcitxKey_Escape:
-        break;
+        /*
+         * Escape cancels the current composition.
+         *
+         * Only consume Escape when there is actually something to cancel.
+         */
+        if (vime_session_get_rendered_len(session_) != 0) {
+            vime_session_reset(session_);
+            clearPreedit();
+            event.filterAndAccept();
+        }
+        return;
 
     case FcitxKey_space:
-        break;
+        /*
+         * Commit the composition. Do not filter Space so that the original
+         * Space key can still reach the application.
+         */
+        if (vime_session_get_rendered_len(session_) != 0) {
+            commitPreedit();
+        }
+        return;
+
+    case FcitxKey_Return:
+    case FcitxKey_KP_Enter:
+        /*
+         * Commit the composition. Do not filter Enter so the application
+         * receives its original Enter key.
+         */
+        if (vime_session_get_rendered_len(session_) != 0) {
+            commitPreedit();
+        }
+        return;
+
+    case FcitxKey_Tab:
+        /*
+         * Same policy as Space/Enter for now:
+         * commit the composition and let Tab reach the application.
+         */
+        if (vime_session_get_rendered_len(session_) != 0) {
+            commitPreedit();
+        }
+        return;
 
     default:
         break;
     }
 
-    uint32_t character = fcitx::Key::keySymToUnicode(key.sym());
+    /*
+     * Only process keys that produce a Unicode scalar.
+     */
+    const uint32_t character =
+        fcitx::Key::keySymToUnicode(key.sym());
 
     if (character == 0) {
         return;
     }
 
-    VimeInsertResult result = vime_session_insert(session_, character);
+    const VimeInsertResult result =
+        vime_session_insert(session_, character);
 
-    // Show preedit after every key that produces output
-    if (result.kind != VIME_INSERT_INVALID) {
-        showPreedit();
+    if (result.kind == VIME_INSERT_INVALID) {
+        /*
+         * The character is not accepted by the current composition.
+         *
+         * For the first implementation, commit the existing composition
+         * and let the original key continue to the application.
+         */
+        if (vime_session_get_rendered_len(session_) != 0) {
+            commitPreedit();
+        }
+
+        return;
     }
 
-    // Do not show any key in release mode because user can type password or something like that
-    // So if we require them to send some log to debug maybe you will be busted :))
+    showPreedit();
+    event.filterAndAccept();
+
     VIME_IF_DEV({
         VIME_DEBUG()
-            << "vime_process_key"
-            << " action="
-            << static_cast<int>(result.kind);
+            << "insert action="
+            << static_cast<int>(result.kind)
+            << " first_changed="
+            << result.first_changed;
     });
-
-
-    event.filterAndAccept();
 }
 
 void VimeState::reset()
 {
-    if (!session_) {
+    if (!session_ || !ic_) {
         return;
     }
 
     vime_session_reset(session_);
-
-    // The buffer is empty, so the preedit must go with it. `vime_reset` has no
-    // action to dispatch -- it consumes no key and commits nothing -- so the
-    // repaint is this method's own responsibility rather than `apply`'s.
-    ic_->inputPanel().setClientPreedit(fcitx::Text(""));
-    ic_->updatePreedit();
+    clearPreedit();
 }
 
 } // namespace vime::fcitx5

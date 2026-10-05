@@ -26,7 +26,8 @@ public:
 
 private:
   void showPreedit();
-
+  void clearPreedit();
+  void commitPreedit();
 
 private:
 
